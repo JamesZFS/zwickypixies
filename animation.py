@@ -1,5 +1,7 @@
 # TODO: Cyrill, please implement the functions in this file if you are interested
 
+import vtkmodules.vtkInteractionStyle
+import vtkmodules.vtkRenderingOpenGL2
 from vtkmodules.vtkCommonDataModel import vtkPolyData
 from vtkmodules.vtkFiltersSources import vtkSphereSource
 from vtkmodules.vtkRenderingCore import (

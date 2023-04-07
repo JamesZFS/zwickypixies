@@ -1,3 +1,5 @@
+import vtkmodules.vtkInteractionStyle
+import vtkmodules.vtkRenderingOpenGL2
 from vtkmodules.vtkCommonColor import vtkNamedColors
 from vtkmodules.vtkIOXML import vtkXMLPolyDataReader, vtkXMLPolyDataWriter
 from vtkmodules.vtkCommonDataModel import vtkPolyData
