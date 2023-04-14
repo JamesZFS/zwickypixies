@@ -36,7 +36,8 @@ def visualize_pts(polydata, array_name):
 
     polydata.GetPointData().SetActiveScalars(array_name)
     range = polydata.GetPointData().GetScalars().GetRange()
-
+    #polydata = mask_points(polydata, 'wind')
+    polydata = threshold_points(polydata, 'mu', 0.0, 0.4)
     point_mapper = vtkPointGaussianMapper()
     point_mapper.SetInputData(polydata)
     point_mapper.SetScalarRange(range)
