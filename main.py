@@ -11,7 +11,7 @@ from vtkmodules.vtkRenderingCore import (
     vtkRenderWindowInteractor,
     vtkRenderer
 )
-
+from rendering.window import Window
 import numpy as np
 from helpers import *
 from filters import *
@@ -36,8 +36,8 @@ def visualize_pts(polydata, array_name):
 
     polydata.GetPointData().SetActiveScalars(array_name)
     range = polydata.GetPointData().GetScalars().GetRange()
-    #polydata = mask_points(polydata, 'wind')
-    polydata = threshold_points(polydata, 'mu', 0.0, 0.4)
+    #polydata = mask_points(polydata, 'star')
+    polydata = threshold_points(polydata, 'mu', 0.0, 0.7)
     point_mapper = vtkPointGaussianMapper()
     point_mapper.SetInputData(polydata)
     point_mapper.SetScalarRange(range)
@@ -58,22 +58,8 @@ def visualize_pts(polydata, array_name):
     point_actor = vtkActor()
     point_actor.SetMapper(point_mapper)
 
-    renderer = vtkRenderer()
-    renderWindow = vtkRenderWindow()
-    renderWindow.AddRenderer(renderer)
-    renderWindowInteractor = vtkRenderWindowInteractor()
-    renderWindowInteractor.SetRenderWindow(renderWindow)
-
-    renderer.AddActor(point_actor)
-    renderer.SetBackground(colors.GetColor3d('DimGray'))
-    renderer.GetActiveCamera().Pitch(90)
-    renderer.GetActiveCamera().SetViewUp(0, 0, 1)
-    renderer.ResetCamera()
-
-    renderWindow.SetSize(1024, 1024)
-    renderWindow.Render()
-    renderWindow.SetWindowName('Cosmology Data')
-    renderWindowInteractor.Start()
+    window = Window(point_actor)
+    window.start()
 
 
 def main():
@@ -108,4 +94,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    

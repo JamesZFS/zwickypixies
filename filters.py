@@ -16,8 +16,6 @@ def mask_points(polydata: vtkPolyData, particle_type: str):
     # Iterate over the points and add the points that match the particle type to the masked points
     for i in range(polydata.GetNumberOfPoints()):
         mask = int(mask_array.GetValue(i))
-        if mask > 3:
-            print(bin(mask))
         # Check the bitmask to determine the particle type
         is_dm = ((mask & 0b00000010) == 0)
         is_baryon = not is_dm

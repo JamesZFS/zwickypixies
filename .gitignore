@@ -3,3 +3,4 @@ random/
 __pycache__/
 *.vtp
 .DS_STORE
+.idea
