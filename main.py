@@ -1,6 +1,7 @@
 import vtkmodules.vtkInteractionStyle
 import vtkmodules.vtkRenderingOpenGL2
 from vtkmodules.vtkCommonColor import vtkNamedColors
+from vtkmodules.vtkCommonCore import vtkLookupTable
 from vtkmodules.vtkIOXML import vtkXMLPolyDataReader, vtkXMLPolyDataWriter
 from vtkmodules.vtkFiltersSources import vtkPlaneSource
 from vtkmodules.vtkCommonDataModel import vtkPolyData
@@ -16,6 +17,7 @@ from vtkmodules.vtkRenderingCore import (
     vtkRenderWindowInteractor,
     vtkRenderer
 )
+from vtkmodules.vtkRenderingAnnotation import vtkScalarBarActor
 
 import numpy as np
 from helpers import *
@@ -36,9 +38,22 @@ def get_program_parameters():
     return args.filename
 
 
-def visualize_pts(polydata, array_name):
+def visualize_pts(polydata, array_name, filename):
     # Visualize as point gaussians, with a string array_name specifying the array to use for color
     colors = vtkNamedColors()
+
+    # Set up color map
+    lut = vtkLookupTable()
+    # This creates a black to white lut.
+    # lut.SetHueRange(0, 0)
+    # lut.SetSaturationRange(0, 0)
+    # lut.SetValueRange(0.2, 1.0)
+
+    # This creates a blue to red lut.
+    lut.SetHueRange(0.667, 0.0)
+
+    # lut.SetNumberOfColors(256)
+    # lut.Build()
 
     polydata.GetPointData().SetActiveScalars(array_name)
     range = polydata.GetPointData().GetScalars().GetRange()
@@ -46,6 +61,7 @@ def visualize_pts(polydata, array_name):
     point_mapper = vtkPointGaussianMapper()
     point_mapper.SetInputData(polydata)
     point_mapper.SetScalarRange(range)
+    point_mapper.SetLookupTable(lut)
     point_mapper.SetScaleFactor(0.2)  # radius
     point_mapper.EmissiveOff()
     point_mapper.SetSplatShaderCode(  # copied from https://kitware.github.io/vtk-examples/site/Python/Meshes/PointInterpolator/
@@ -98,14 +114,22 @@ def visualize_pts(polydata, array_name):
     plane_mapper = vtkPolyDataMapper()
     plane_mapper.SetInputConnection(interpolator.GetOutputPort())
     plane_mapper.SetScalarRange(range)
-    plane_mapper.SetLookupTable(point_mapper.GetLookupTable())
+    plane_mapper.SetLookupTable(lut)
 
     plane_actor = vtkActor()
     plane_actor.SetMapper(plane_mapper)
     # plane_actor.GetProperty().SetRepresentationToWireframe()
     # plane_actor.GetProperty().SetColor(colors.GetColor3d('Banana'))
 
-    # TODO: add a color bar
+    # Render a color map legend at the right side of the window
+    legend = vtkScalarBarActor()
+    legend.SetLookupTable(lut)
+    legend.SetNumberOfLabels(8)
+    legend.SetTitle(array_name)
+    legend.SetVerticalTitleSeparation(6)
+    legend.GetPositionCoordinate().SetValue(0.92, 0.1)
+    legend.SetWidth(0.06)
+
     # TODO: add xyz axes
 
     renderer = vtkRenderer()
@@ -116,14 +140,15 @@ def visualize_pts(polydata, array_name):
 
     renderer.AddActor(point_actor)
     renderer.AddActor(plane_actor)
+    renderer.AddActor(legend)
     renderer.SetBackground(colors.GetColor3d('DimGray'))
-    # renderer.GetActiveCamera().Pitch(90)
+    renderer.GetActiveCamera().Yaw(-20)
     renderer.GetActiveCamera().SetViewUp(0, 1, 0)
     renderer.ResetCamera()
 
     renderWindow.SetSize(2048, 2048)
     renderWindow.Render()
-    renderWindow.SetWindowName('Cosmology Data')
+    renderWindow.SetWindowName(f'{array_name} of {filename}')
     renderWindowInteractor.Start()
 
 
@@ -153,8 +178,8 @@ def main():
     # print('Mass: ', mass)
 
     # Switch to different array_name to visualize different properties
-    visualize_pts(polydata, 'mass')
-    # visualize_pts(polydata, 'uu')
+    # visualize_pts(polydata, 'mass', filename)
+    visualize_pts(polydata, 'phi', filename)
 
 
 if __name__ == '__main__':
