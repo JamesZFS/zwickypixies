@@ -2,7 +2,12 @@ import vtkmodules.vtkInteractionStyle
 import vtkmodules.vtkRenderingOpenGL2
 from vtkmodules.vtkCommonColor import vtkNamedColors
 from vtkmodules.vtkIOXML import vtkXMLPolyDataReader, vtkXMLPolyDataWriter
+from vtkmodules.vtkFiltersSources import vtkPlaneSource
 from vtkmodules.vtkCommonDataModel import vtkPolyData
+from vtkmodules.vtkFiltersPoints import (
+    vtkGaussianKernel,
+    vtkPointInterpolator
+)
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
     vtkPolyDataMapper,
@@ -16,6 +21,7 @@ import numpy as np
 from helpers import *
 from filters import *
 from animation import *
+from conf import *
 
 
 
@@ -56,9 +62,51 @@ def visualize_pts(polydata, array_name):
 
     point_actor = vtkActor()
     point_actor.SetMapper(point_mapper)
-    point_actor.GetProperty().SetOpacity(0.8)
+    point_actor.GetProperty().SetOpacity(0.1)
+
+    # Create a scan plane to show the interpolated cell data
+    plane_source = vtkPlaneSource()
+    plane_source.SetOrigin(0, 0, COORD_MAX / 2)  # TODO: move the "scan" plane with GUI
+    plane_source.SetPoint1(COORD_MAX, 0, COORD_MAX / 2)
+    plane_source.SetPoint2(0, COORD_MAX, COORD_MAX / 2)
+    plane_source.SetResolution(CELL_RES, CELL_RES)
+    plane_source.Update()
+
+    plane: vtkPolyData = plane_source.GetOutput()
+
+    # Interpolate from the point data to the cell data on the plane
+    gaussian_kernel = vtkGaussianKernel()
+    gaussian_kernel.SetSharpness(10)  # TODO: make it a GUI slider
+    gaussian_kernel.SetRadius(3)
+
+    interpolator = vtkPointInterpolator()
+    interpolator.SetInputData(plane)
+    interpolator.SetSourceData(polydata)
+    interpolator.SetKernel(gaussian_kernel)
+    interpolator.Update()
+
+    # Debug print of interpolated data
+    # data: vtkPolyData = interpolator.GetOutput()
+    # print('Interpolated data:')
+    # print('Number of points:', data.GetNumberOfPoints())
+    # print('Number of cells:', data.GetNumberOfCells())
+    # print('Number of point data arrays:', data.GetPointData().GetNumberOfArrays())
+    # print('Number of cell data arrays:', data.GetCellData().GetNumberOfArrays())
+    # arr = np.array(data.GetPointData().GetScalars())
+    # print(arr, arr.shape, arr.mean())
+
+    plane_mapper = vtkPolyDataMapper()
+    plane_mapper.SetInputConnection(interpolator.GetOutputPort())
+    plane_mapper.SetScalarRange(range)
+    plane_mapper.SetLookupTable(point_mapper.GetLookupTable())
+
+    plane_actor = vtkActor()
+    plane_actor.SetMapper(plane_mapper)
+    # plane_actor.GetProperty().SetRepresentationToWireframe()
+    # plane_actor.GetProperty().SetColor(colors.GetColor3d('Banana'))
 
     # TODO: add a color bar
+    # TODO: add xyz axes
 
     renderer = vtkRenderer()
     renderWindow = vtkRenderWindow()
@@ -67,9 +115,10 @@ def visualize_pts(polydata, array_name):
     renderWindowInteractor.SetRenderWindow(renderWindow)
 
     renderer.AddActor(point_actor)
+    renderer.AddActor(plane_actor)
     renderer.SetBackground(colors.GetColor3d('DimGray'))
-    renderer.GetActiveCamera().Pitch(90)
-    renderer.GetActiveCamera().SetViewUp(0, 0, 1)
+    # renderer.GetActiveCamera().Pitch(90)
+    renderer.GetActiveCamera().SetViewUp(0, 1, 0)
     renderer.ResetCamera()
 
     renderWindow.SetSize(2048, 2048)
