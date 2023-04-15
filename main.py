@@ -77,6 +77,8 @@ def visualize_pts(polydata, array_name):
 
 def main():
     filename = get_program_parameters()
+    trace_particle(filename, [])
+    exit()
 
     # Read all the data from the file
     reader = vtkXMLPolyDataReader()
@@ -84,7 +86,9 @@ def main():
     reader.Update()
 
     polydata = reader.GetOutput()
-    print_meta_data(polydata)
+    polydata = slice_polydata(polydata, 1)
+    print(polydata.GetPoints()[0])
+
 
     # The code below shows how to dump first 100 points into another vtp file (for cheaper visualization)
     # sliced = slice_polydata(polydata, 100)
