@@ -56,6 +56,9 @@ def visualize_pts(polydata, array_name):
 
     point_actor = vtkActor()
     point_actor.SetMapper(point_mapper)
+    point_actor.GetProperty().SetOpacity(0.8)
+
+    # TODO: add a color bar
 
     renderer = vtkRenderer()
     renderWindow = vtkRenderWindow()
@@ -69,7 +72,7 @@ def visualize_pts(polydata, array_name):
     renderer.GetActiveCamera().SetViewUp(0, 0, 1)
     renderer.ResetCamera()
 
-    renderWindow.SetSize(1024, 1024)
+    renderWindow.SetSize(2048, 2048)
     renderWindow.Render()
     renderWindow.SetWindowName('Cosmology Data')
     renderWindowInteractor.Start()

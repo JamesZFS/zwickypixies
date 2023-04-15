@@ -39,16 +39,16 @@ def print_meta_data(polydata):
         array_name_to_index[name] = i
 
     # Investigate the first point
-    print()
-    print('First point: ', polydata.GetPoint(0))
+    # print()
+    # print('First point: ', polydata.GetPoint(0))
 
-    # Print the array data for the first point
-    for i in range(polydata.GetPointData().GetNumberOfArrays()):
-        name = polydata.GetPointData().GetArrayName(i)
-        dim = polydata.GetPointData().GetArray(i).GetNumberOfComponents()
-        dtype = polydata.GetPointData().GetArray(i).GetDataTypeAsString()
-        print(
-            f'Array {i:2}: {name:5} = {polydata.GetPointData().GetArray(i).GetTuple(0)}')
+    # # Print the array data for the first point
+    # for i in range(polydata.GetPointData().GetNumberOfArrays()):
+    #     name = polydata.GetPointData().GetArrayName(i)
+    #     dim = polydata.GetPointData().GetArray(i).GetNumberOfComponents()
+    #     dtype = polydata.GetPointData().GetArray(i).GetDataTypeAsString()
+    #     print(
+    #         f'Array {i:2}: {name:5} = {polydata.GetPointData().GetArray(i).GetTuple(0)}')
 
     print()
 
