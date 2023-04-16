@@ -8,7 +8,7 @@ from vtkmodules.vtkCommonColor import vtkNamedColors
 from PyQt5 import QtCore, QtWidgets
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 import os
-from reader import importer
+from dataops import importer
 import config
 
 class _Window(QtWidgets.QMainWindow):

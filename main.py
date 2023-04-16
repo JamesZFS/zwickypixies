@@ -2,7 +2,7 @@ from vtkmodules.vtkCommonColor import vtkNamedColors
 from vtkmodules.vtkIOXML import vtkXMLPolyDataReader
 from rendering.window import startWindow
 from helpers import *
-from filters import *
+from dataops.filters import *
 from animation import *
 import config
 
