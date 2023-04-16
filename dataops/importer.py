@@ -1,18 +1,25 @@
 from vtkmodules.vtkIOXML import vtkXMLPolyDataReader
 from animation import *
+from dataops.filters import mask_points
 import config
 
-def getPolyData(filename):
+def getPolyData(filename: str = None):
+    if filename:
+        config.File = filename
     reader = vtkXMLPolyDataReader()
-    reader.SetFileName(filename)
+    reader.SetFileName(config.File)
     reader.Update()
-    config.currentFile = filename
     polydata = reader.GetOutput()
     return polydata
 
-def getMapper(polydata, array_name):
+def getMapper(polydata, array_name: str, filter: str = None):
+    if filter:
+        config.Filter = filter
+    polydata = mask_points(polydata, config.ArrayName, config.Filter)
     polydata.GetPointData().SetActiveScalars(array_name)
     range = polydata.GetPointData().GetScalars().GetRange()
+    config.RangeMin = range[0]
+    config.RangeMax = range[1]
     mapper = vtkPointGaussianMapper()
     mapper.SetInputData(polydata)
     mapper.SetScalarRange(range)
@@ -32,12 +39,12 @@ def getMapper(polydata, array_name):
     )
     return mapper
 
-def getActor(filename, array_name):
-    if not array_name in ['vx', 'vy', 'vz', 'mass', 'uu', 'hh', 'mu', 'rho', 'phi', 'id', 'mask']:
-        return vtkActor()
+def getActor(array_name: str, filename: str = None, filter: str = None):
+    if array_name in config.ArrayNameList:
+        config.ArrayName = array_name
+    if filename:
+        config.File = filename
     actor = vtkActor()
-    actor.SetMapper(getMapper(getPolyData(filename), array_name))
+    actor.SetMapper(getMapper(getPolyData(config.File), config.ArrayName, filter))
     return actor
-
-
 

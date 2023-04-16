@@ -31,7 +31,10 @@ class _Window(QtWidgets.QMainWindow):
         self.frame.setContentsMargins(0, 0, 0, 0)
         self.setContentsMargins(0, 0, 0, 0)
         self.vl.setContentsMargins(0, 0, 0, 0)
-        self.bottomBarLabel = None
+        self.bottomBarFileLabel = None
+        self.bottomBarArrayNameLabel = None
+        self.bottomBarThresholdLabel = None
+        self.bottomBarFilterLabel = None
         self.currActor = None
         self.initMenuBar()
         self.initBottomBar()
@@ -40,12 +43,12 @@ class _Window(QtWidgets.QMainWindow):
     def initMenuBar(self):
         menubar = self.menuBar()
         file_menu = menubar.addMenu('File')
-        exit_action = QtWidgets.QAction('Exit', self)
-        exit_action.triggered.connect(self.close)
-        file_menu.addAction(exit_action)
         open_action = QtWidgets.QAction('Open', self)
         open_action.triggered.connect(self.openFile)
         file_menu.addAction(open_action)
+        exit_action = QtWidgets.QAction('Exit', self)
+        exit_action.triggered.connect(self.close)
+        file_menu.addAction(exit_action)
 
     def initToolBar(self):
         toolbar = QtWidgets.QToolBar(self)
@@ -54,41 +57,67 @@ class _Window(QtWidgets.QMainWindow):
         toolbar.setFixedWidth(250)
         toolbar.setStyleSheet("QToolBar { border: none; }")
         self.addToolBar(QtCore.Qt.RightToolBarArea, toolbar)
-        button1 = QtWidgets.QToolButton()
-        button1.setText("Button 1")
-        toolbar.addWidget(button1)
-        button2 = QtWidgets.QToolButton()
-        button2.setText("Button 2")
-        toolbar.addWidget(button2)
-        button3 = QtWidgets.QToolButton()
-        button3.setText("Button 3")
-        toolbar.addWidget(button3)
-        toolbar.setMinimumHeight(self.frame.sizeHint().height())
-        button3 = QtWidgets.QToolButton()
-        button3.setText("Button 3")
-        menu = QtWidgets.QMenu()
-        menu.addAction("Menu Item 1")
-        menu.addAction("Menu Item 2")
-        button3.setMenu(menu)
-        button3.setPopupMode(QtWidgets.QToolButton.InstantPopup)
-        toolbar.addWidget(button3)
 
+        # Create the QWidget to hold the label and the QComboBox
+        widget = QtWidgets.QWidget()
+        layout = QtWidgets.QFormLayout(widget)
+        label = QtWidgets.QLabel("Array:")
+        arrayComboBox = QtWidgets.QComboBox()
+        arrayComboBox.addItems(config.ArrayNameList)
+        arrayComboBox.setFixedWidth(100)
+        arrayComboBox.currentIndexChanged.connect(self.onArrayComboBoxChange)
+        layout.addRow(label, arrayComboBox)
+        toolbar.addWidget(widget)
+        toolbar.addSeparator()
+
+        widget = QtWidgets.QWidget()
+        layout = QtWidgets.QFormLayout(widget)
+        label = QtWidgets.QLabel("Filter:")
+        filterComboBox = QtWidgets.QComboBox()
+        filterComboBox.addItems(config.FilterList)
+        filterComboBox.setFixedWidth(100)
+        filterComboBox.currentIndexChanged.connect(self.onFilterComboBoxChange)
+        layout.addRow(label, filterComboBox)
+        toolbar.addWidget(widget)
+        toolbar.addSeparator()
 
     def initBottomBar(self):
-            bottomBar = QtWidgets.QFrame(self.frame)
-            bottomBar.setFixedHeight(20)
-            bottomBar.setStyleSheet("background-color: rgba(255, 255, 255, 0.2);")
-            bottomBar.setContentsMargins(0, 0, 0, 0)
-            self.vl.addWidget(bottomBar)
-            self.vl.setSpacing(0)
-            self.bottomBarLabel = QtWidgets.QLabel(bottomBar)
-            self.bottomBarLabel.setContentsMargins(0, 0, 0, 0)
-            self.bottomBarLabel.setText(" " + config.currentFile)
-            self.bottomBarLabel.setMinimumSize(self.bottomBarLabel.sizeHint())
-            bottomBarLayout = QtWidgets.QHBoxLayout(bottomBar)
-            bottomBarLayout.addWidget(self.bottomBarLabel)
-            bottomBarLayout.setContentsMargins(0, 0, 0, 0)
-            bottomBar.setLayout(bottomBarLayout)
+        bottomBar = QtWidgets.QFrame(self.frame)
+        bottomBar.setFixedHeight(20)
+        bottomBar.setStyleSheet("background-color: rgba(255, 255, 255, 0.2);")
+        bottomBarLayout = QtWidgets.QHBoxLayout(bottomBar)
+        bottomBarLayout.setSpacing(0)
+        bottomBarLayout.setContentsMargins(0, 0, 0, 0)
+        bottomBar.setLayout(bottomBarLayout)
+
+        self.bottomBarFileLabel = QtWidgets.QLabel(bottomBar)
+        self.bottomBarFileLabel.setContentsMargins(0, 0, 0, 0)
+        self.bottomBarFileLabel.setMinimumSize(self.bottomBarFileLabel.sizeHint())
+        bottomBarLayout.addWidget(self.bottomBarFileLabel)
+
+        self.bottomBarArrayNameLabel = QtWidgets.QLabel(bottomBar)
+        self.bottomBarArrayNameLabel.setContentsMargins(0, 0, 0, 0)
+        self.bottomBarArrayNameLabel.setMinimumSize(self.bottomBarArrayNameLabel.sizeHint())
+        bottomBarLayout.addWidget(self.bottomBarArrayNameLabel)
+
+        self.bottomBarThresholdLabel = QtWidgets.QLabel(bottomBar)
+        self.bottomBarThresholdLabel.setContentsMargins(0, 0, 0, 0)
+        self.bottomBarThresholdLabel.setMinimumSize(self.bottomBarThresholdLabel.sizeHint())
+        bottomBarLayout.addWidget(self.bottomBarThresholdLabel)
+
+        self.bottomBarFilterLabel = QtWidgets.QLabel(bottomBar)
+        self.bottomBarFilterLabel.setContentsMargins(0, 0, 0, 0)
+        self.bottomBarFilterLabel.setMinimumSize(self.bottomBarFilterLabel.sizeHint())
+        bottomBarLayout.addWidget(self.bottomBarFilterLabel)
+
+        self.vl.addWidget(bottomBar)
+        self.vl.setSpacing(0)
+
+    def updateBottomBarText(self):
+        self.bottomBarFileLabel.setText(" File: " + config.File)
+        self.bottomBarArrayNameLabel.setText("| Current Array: ({})  Range: [{:.5f}, {:.5f}]".format(config.ArrayName, config.RangeMin, config.RangeMax))
+        self.bottomBarThresholdLabel.setText("| Threshold: [{}, {}]".format(config.ThresholdMin, config.ThresholdMax))
+        self.bottomBarFilterLabel.setText("| Filter: ({})".format(config.Filter))
 
     def initActor(self, actor: vtkActor):
         self.currActor = actor
@@ -97,27 +126,41 @@ class _Window(QtWidgets.QMainWindow):
         self.renderer.GetActiveCamera().Pitch(90)
         self.renderer.GetActiveCamera().SetViewUp(0, 0, 1)
         self.renderer.ResetCamera()
+        self.updateBottomBarText()
 
-    def updateActor(self, actor: vtkActor):
+    def updateActor(self, filename: str = None, array_name: str = None, filter: str = None):
+        if array_name:
+            actor = importer.getActor(array_name, filename, filter)
+        else:
+            actor = importer.getActor(config.ArrayName, filename, filter)
         self.renderer.RemoveActor(self.currActor)
         self.currActor = actor
-        self.bottomBarLabel.setText(" " + config.currentFile)
+        self.bottomBarFileLabel.setText(" " + config.File)
         self.renderer.AddActor(self.currActor)
         self.refresh()
 
     def refresh(self):
         self.renderWindowInteractor.Render()
+        self.updateBottomBarText()
+
     def start(self):
         self.show()
         self.renderWindowInteractor.Initialize()
+
+    def onArrayComboBoxChange(self, index):
+        array_name = self.sender().currentText()
+        self.updateActor(array_name=array_name)
+
+    def onFilterComboBoxChange(self, index):
+        filter = self.sender().currentText()
+        self.updateActor(filter=filter)
 
     def openFile(self):
         filename, _filter = QtWidgets.QFileDialog.getOpenFileName(self, 'Open File', os.getenv('HOME'),'VTP Files (*.vtp)',
                                                                   options=QtWidgets.QFileDialog.DontUseNativeDialog
                                                                   )
         if filename:
-            actor = importer.getActor(filename, config.currentArrayName)
-            self.updateActor(actor)
+            self.updateActor(filename=filename)
 
 
 def startWindow(actor: vtkActor):

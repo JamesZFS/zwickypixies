@@ -23,9 +23,11 @@ def visualize_pts(polydata, array_name):
 
     polydata.GetPointData().SetActiveScalars(array_name)
 
-    #polydata = mask_points(polydata, 'star')
-    polydata = threshold_points(polydata, 'mu', 0.0, 0.7)
+    #polydata = mask_points(polydata, array_name, 'star')
+    #polydata = threshold_points(polydata, 'mu', 0.0, 0.7)
     range = polydata.GetPointData().GetScalars().GetRange()
+    config.RangeMin = range[0]
+    config.RangeMax = range[1]
     print(range)
     point_mapper = vtkPointGaussianMapper()
     point_mapper.SetInputData(polydata)
@@ -55,8 +57,8 @@ def main():
     reader = vtkXMLPolyDataReader()
     reader.SetFileName(filename)
     reader.Update()
-    config.currentFile = filename
-    config.currentArrayName = 'mass'
+    config.File = filename
+    config.ArrayName = 'mass'
     polydata = reader.GetOutput()
     print_meta_data(polydata)
 
@@ -75,7 +77,7 @@ def main():
     # print('Mass: ', mass)
 
     # Switch to different array_name to visualize different properties
-    visualize_pts(polydata, config.currentArrayName)
+    visualize_pts(polydata, config.ArrayName)
     # visualize_pts(polydata, 'uu')
 
 if __name__ == '__main__':

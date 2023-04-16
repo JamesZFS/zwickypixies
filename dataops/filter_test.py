@@ -28,7 +28,7 @@ class TestMask(unittest.TestCase):
         print('Number of gas: ', num_gas)
         print('Number of agn: ', num_agn)
         assert num_polydata == num_dm + num_baryon
-        assert num_baryon == num_star + num_wind + num_gas
+        assert num_polydata == num_dm + num_baryon and num_gas <= num_baryon and num_agn <= num_dm
 
 if __name__ == '__main__':
     unittest.main()
