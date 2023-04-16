@@ -60,7 +60,6 @@ def threshold_points(polydata: vtkPolyData, array_name: str, threshold_min: floa
     # Iterate over the points and add the points that are between the specified thresholds
     for i in range(polydata.GetNumberOfPoints()):
         data = data_array.GetValue(i)
-        print(data)
         if threshold_min <= data <= threshold_max:
             filtered_points.InsertNextPoint(polydata.GetPoint(i))
 

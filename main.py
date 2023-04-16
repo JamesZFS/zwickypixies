@@ -11,12 +11,14 @@ from vtkmodules.vtkRenderingCore import (
     vtkRenderWindowInteractor,
     vtkRenderer
 )
-from rendering.window import Window
+from rendering.window import startWindow
+import rendering.currMeta
 import numpy as np
 from helpers import *
 from filters import *
 from animation import *
-
+import sys
+from PyQt5 import QtCore, QtWidgets
 
 
 def get_program_parameters():
@@ -57,19 +59,19 @@ def visualize_pts(polydata, array_name):
 
     point_actor = vtkActor()
     point_actor.SetMapper(point_mapper)
+    startWindow(point_actor)
 
-    window = Window(point_actor)
-    window.start()
 
 
 def main():
+
     filename = get_program_parameters()
 
     # Read all the data from the file
     reader = vtkXMLPolyDataReader()
     reader.SetFileName(filename)
     reader.Update()
-
+    rendering.currMeta.currentFile = filename
     polydata = reader.GetOutput()
     print_meta_data(polydata)
 
@@ -90,7 +92,6 @@ def main():
     # Switch to different array_name to visualize different properties
     visualize_pts(polydata, 'mass')
     # visualize_pts(polydata, 'uu')
-
 
 if __name__ == '__main__':
     main()
