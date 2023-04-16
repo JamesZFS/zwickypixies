@@ -82,13 +82,9 @@ class _Window(QtWidgets.QMainWindow):
         self.bottomBarLabel.setContentsMargins(0, 0, 0, 0)
         self.bottomBarLabel.setText("Your Text Here")
         self.bottomBarLabel.setMinimumSize(self.bottomBarLabel.sizeHint())
-
-        # Add the label to the bottom bar
         bottomBarLayout = QtWidgets.QHBoxLayout(bottomBar)
         bottomBarLayout.addWidget(self.bottomBarLabel)
         bottomBarLayout.setContentsMargins(0, 0, 0, 0)
-
-        # Set the layout for the bottom bar
         bottomBar.setLayout(bottomBarLayout)
 
     def initActor(self, actor: vtkActor):
