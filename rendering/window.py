@@ -1,28 +1,22 @@
-from vtkmodules.vtkInteractionWidgets import vtkSliderWidget, vtkSliderRepresentation2D, vtkButtonRepresentation, \
-    vtkButtonWidget, vtkTexturedButtonRepresentation2D
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
-    vtkPolyDataMapper,
-    vtkPointGaussianMapper,
     vtkRenderWindow,
-    vtkRenderWindowInteractor,
     vtkRenderer
 )
 import sys
 from vtkmodules.vtkCommonColor import vtkNamedColors
-import vtkmodules.vtkCommonCore as vtkCommonCore
-import vtkmodules.vtkRenderingCore as vtkRenderingCore
-from vtk import vtkTextActor
 from PyQt5 import QtCore, QtWidgets
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 import os
-
+from reader import importer
+import config
 
 class _Window(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
         QtWidgets.QMainWindow.__init__(self, parent)
         self.renderer = vtkRenderer()
         self.renderWindow = vtkRenderWindow()
+        self.renderWindow.AddRenderer(self.renderer)
         self.app = QtWidgets.QApplication(sys.argv)
         self.frame = QtWidgets.QFrame()
         self.resize(2048, 1024)
@@ -50,7 +44,7 @@ class _Window(QtWidgets.QMainWindow):
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
         open_action = QtWidgets.QAction('Open', self)
-        open_action.triggered.connect(self.openFile)  # connect to the openFile method
+        open_action.triggered.connect(self.openFile)
         file_menu.addAction(open_action)
 
     def initToolBar(self):
@@ -70,26 +64,34 @@ class _Window(QtWidgets.QMainWindow):
         button3.setText("Button 3")
         toolbar.addWidget(button3)
         toolbar.setMinimumHeight(self.frame.sizeHint().height())
+        button3 = QtWidgets.QToolButton()
+        button3.setText("Button 3")
+        menu = QtWidgets.QMenu()
+        menu.addAction("Menu Item 1")
+        menu.addAction("Menu Item 2")
+        button3.setMenu(menu)
+        button3.setPopupMode(QtWidgets.QToolButton.InstantPopup)
+        toolbar.addWidget(button3)
+
 
     def initBottomBar(self):
-        bottomBar = QtWidgets.QFrame(self.frame)
-        bottomBar.setFixedHeight(20)
-        bottomBar.setStyleSheet("background-color: rgba(255, 255, 255, 0.2);")
-        bottomBar.setContentsMargins(0, 0, 0, 0)
-        self.vl.addWidget(bottomBar)
-        self.vl.setSpacing(0)
-        self.bottomBarLabel = QtWidgets.QLabel(bottomBar)
-        self.bottomBarLabel.setContentsMargins(0, 0, 0, 0)
-        self.bottomBarLabel.setText("Your Text Here")
-        self.bottomBarLabel.setMinimumSize(self.bottomBarLabel.sizeHint())
-        bottomBarLayout = QtWidgets.QHBoxLayout(bottomBar)
-        bottomBarLayout.addWidget(self.bottomBarLabel)
-        bottomBarLayout.setContentsMargins(0, 0, 0, 0)
-        bottomBar.setLayout(bottomBarLayout)
+            bottomBar = QtWidgets.QFrame(self.frame)
+            bottomBar.setFixedHeight(20)
+            bottomBar.setStyleSheet("background-color: rgba(255, 255, 255, 0.2);")
+            bottomBar.setContentsMargins(0, 0, 0, 0)
+            self.vl.addWidget(bottomBar)
+            self.vl.setSpacing(0)
+            self.bottomBarLabel = QtWidgets.QLabel(bottomBar)
+            self.bottomBarLabel.setContentsMargins(0, 0, 0, 0)
+            self.bottomBarLabel.setText(" " + config.currentFile)
+            self.bottomBarLabel.setMinimumSize(self.bottomBarLabel.sizeHint())
+            bottomBarLayout = QtWidgets.QHBoxLayout(bottomBar)
+            bottomBarLayout.addWidget(self.bottomBarLabel)
+            bottomBarLayout.setContentsMargins(0, 0, 0, 0)
+            bottomBar.setLayout(bottomBarLayout)
 
     def initActor(self, actor: vtkActor):
         self.currActor = actor
-        self.renderWindow.AddRenderer(self.renderer)
         self.renderer.AddActor(self.currActor)
         self.renderer.SetBackground(vtkNamedColors().GetColor3d('DimGray'))
         self.renderer.GetActiveCamera().Pitch(90)
@@ -99,21 +101,23 @@ class _Window(QtWidgets.QMainWindow):
     def updateActor(self, actor: vtkActor):
         self.renderer.RemoveActor(self.currActor)
         self.currActor = actor
+        self.bottomBarLabel.setText(" " + config.currentFile)
         self.renderer.AddActor(self.currActor)
+        self.refresh()
 
+    def refresh(self):
+        self.renderWindowInteractor.Render()
     def start(self):
         self.show()
         self.renderWindowInteractor.Initialize()
 
     def openFile(self):
-        filename, _filter = QtWidgets.QFileDialog.getOpenFileName(self, 'Open File', os.getenv('HOME'), options=QtWidgets.QFileDialog.DontUseNativeDialog)
+        filename, _filter = QtWidgets.QFileDialog.getOpenFileName(self, 'Open File', os.getenv('HOME'),'VTP Files (*.vtp)',
+                                                                  options=QtWidgets.QFileDialog.DontUseNativeDialog
+                                                                  )
         if filename:
-            # handle the file opening logic here
-            print(f'Opening file: {filename}')
-
-
-def updateBottomBarText(window: _Window, text):
-    window.bottomBarLabel.setText(" " + text)
+            actor = importer.getActor(filename, config.currentArrayName)
+            self.updateActor(actor)
 
 
 def startWindow(actor: vtkActor):

@@ -1,7 +1,8 @@
 from vtkmodules.vtkCommonDataModel import vtkPolyData
-from vtkmodules.vtkCommonCore import vtkPoints
+from vtkmodules.vtkCommonCore import vtkPoints, vtkIntArray, vtkDoubleArray
 
-def mask_points(polydata: vtkPolyData, particle_type: str):
+
+def mask_points(polydata: vtkPolyData, array_name: str, particle_type: str):
     '''
     Mask points in the polydata based on the particle type
 
@@ -12,11 +13,12 @@ def mask_points(polydata: vtkPolyData, particle_type: str):
     mask_array = polydata.GetPointData().GetArray('mask')
     masked_polydata = vtkPolyData()
     masked_points = vtkPoints()
+    masked_scalars = vtkDoubleArray()
+    masked_scalars.SetName(array_name)
 
-    # Iterate over the points and add the points that match the particle type to the masked points
     for i in range(polydata.GetNumberOfPoints()):
         mask = int(mask_array.GetValue(i))
-        # Check the bitmask to determine the particle type
+        masked_scalars.InsertNextValue(mask)
         is_dm = ((mask & 0b00000010) == 0)
         is_baryon = not is_dm
         is_star = ((mask & 0b00100000) != 0) and is_baryon
@@ -37,9 +39,8 @@ def mask_points(polydata: vtkPolyData, particle_type: str):
         elif particle_type == 'agn' and is_agn:
             masked_points.InsertNextPoint(polydata.GetPoint(i))
 
-    # Set the masked points as the new points for the masked polydata
     masked_polydata.SetPoints(masked_points)
-
+    masked_polydata.GetPointData().SetScalars(masked_scalars)
     return masked_polydata
 
 
@@ -56,15 +57,19 @@ def threshold_points(polydata: vtkPolyData, array_name: str, threshold_min: floa
     data_array = polydata.GetPointData().GetArray(array_name)
     filtered_polydata = vtkPolyData()
     filtered_points = vtkPoints()
+    filtered_scalars = vtkDoubleArray()
+    filtered_scalars.SetName(array_name)
 
     # Iterate over the points and add the points that are between the specified thresholds
     for i in range(polydata.GetNumberOfPoints()):
         data = data_array.GetValue(i)
         if threshold_min <= data <= threshold_max:
             filtered_points.InsertNextPoint(polydata.GetPoint(i))
+            filtered_scalars.InsertNextValue(data)
 
-    # Set the masked points as the new points for the filtered polydata
+    # Set the masked points and filtered scalars as the new point data for the filtered polydata
     filtered_polydata.SetPoints(filtered_points)
+    filtered_polydata.GetPointData().SetScalars(filtered_scalars)
 
     return filtered_polydata
 

@@ -1,0 +1,4 @@
+global currentFile
+global currentArrayName
+
+

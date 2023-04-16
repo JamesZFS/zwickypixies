@@ -1,25 +1,10 @@
-import vtkmodules.vtkInteractionStyle
-import vtkmodules.vtkRenderingOpenGL2
 from vtkmodules.vtkCommonColor import vtkNamedColors
-from vtkmodules.vtkIOXML import vtkXMLPolyDataReader, vtkXMLPolyDataWriter
-from vtkmodules.vtkCommonDataModel import vtkPolyData
-from vtkmodules.vtkRenderingCore import (
-    vtkActor,
-    vtkPolyDataMapper,
-    vtkPointGaussianMapper,
-    vtkRenderWindow,
-    vtkRenderWindowInteractor,
-    vtkRenderer
-)
+from vtkmodules.vtkIOXML import vtkXMLPolyDataReader
 from rendering.window import startWindow
-import rendering.currMeta
-import numpy as np
 from helpers import *
 from filters import *
 from animation import *
-import sys
-from PyQt5 import QtCore, QtWidgets
-
+import config
 
 def get_program_parameters():
     import argparse
@@ -37,9 +22,11 @@ def visualize_pts(polydata, array_name):
     colors = vtkNamedColors()
 
     polydata.GetPointData().SetActiveScalars(array_name)
-    range = polydata.GetPointData().GetScalars().GetRange()
+
     #polydata = mask_points(polydata, 'star')
     polydata = threshold_points(polydata, 'mu', 0.0, 0.7)
+    range = polydata.GetPointData().GetScalars().GetRange()
+    print(range)
     point_mapper = vtkPointGaussianMapper()
     point_mapper.SetInputData(polydata)
     point_mapper.SetScalarRange(range)
@@ -61,17 +48,15 @@ def visualize_pts(polydata, array_name):
     point_actor.SetMapper(point_mapper)
     startWindow(point_actor)
 
-
-
 def main():
 
     filename = get_program_parameters()
-
     # Read all the data from the file
     reader = vtkXMLPolyDataReader()
     reader.SetFileName(filename)
     reader.Update()
-    rendering.currMeta.currentFile = filename
+    config.currentFile = filename
+    config.currentArrayName = 'mass'
     polydata = reader.GetOutput()
     print_meta_data(polydata)
 
@@ -90,7 +75,7 @@ def main():
     # print('Mass: ', mass)
 
     # Switch to different array_name to visualize different properties
-    visualize_pts(polydata, 'mass')
+    visualize_pts(polydata, config.currentArrayName)
     # visualize_pts(polydata, 'uu')
 
 if __name__ == '__main__':
