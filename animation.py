@@ -19,7 +19,6 @@ from vtkmodules.vtkRenderingCore import (
 from helpers import print_meta_data, slice_polydata, get_numpy_pts
 
 name = []
-last = None
 TOTAL_STEPS = 312
 polydata_total = []
 
@@ -92,30 +91,17 @@ def trace_particle(data_dir: str, particle_ids: list):
         reader.Update()
         polydata = reader.GetOutput()
         polydata.GetPointData().SetActiveScalars("mass")
-        polydata = slice_polydata(polydata, 20)
+        #polydata = slice_polydata(polydata, 20)
         polydata_total.append(polydata)
         if step / (TOTAL_STEPS - 1) * 100 >= percentage:
             print("Loading " + str(percentage) + "% complete")
             percentage += 10
     print("Start Animation")
 
-
-
-    fileName = name[0] + "000" + name[1]
-    # print(fileName)
-    reader.SetFileName(fileName)
-    reader.Update()
-
-
-    polydata = reader.GetOutput()
-    #polydata = slice_polydata(polydata, 10)
-    #global last
-    #last = get_numpy_pts(polydata)
-    polydata.GetPointData().SetActiveScalars("mass")
-    rang = polydata.GetPointData().GetScalars().GetRange()
+    rang = polydata_total[0].GetPointData().GetScalars().GetRange()
 
     mapper = vtkPointGaussianMapper()
-    mapper.SetInputData(polydata)
+    mapper.SetInputData(polydata_total[0])
     mapper.SetScalarRange(rang)
     mapper.SetScaleFactor(0.2)  # radius
     mapper.EmissiveOff()
@@ -156,10 +142,9 @@ def trace_particle(data_dir: str, particle_ids: list):
     renderWindowInteractor.Initialize()
 
     # Sign up to receive TimerEvent
-    cb = vtkTimerCallback(TOTAL_STEPS - 1, actor, renderWindowInteractor, mapper)
+    cb = vtkTimerCallback(TOTAL_STEPS, actor, renderWindowInteractor, mapper)
     renderWindowInteractor.AddObserver('TimerEvent', cb.execute)
-    cb.timerId = renderWindowInteractor.CreateRepeatingTimer(700)
-
+    cb.timerId = renderWindowInteractor.CreateRepeatingTimer(1000)
     # start the interaction and timer
     renderWindow.Render()
     renderWindow.SetSize(900, 900)
