@@ -20,6 +20,8 @@ from helpers import print_meta_data, slice_polydata, get_numpy_pts
 
 name = []
 last = None
+TOTAL_STEPS = 312
+polydata_total = []
 
 class vtkTimerCallback():
     # INSPIRED FROM https://kitware.github.io/vtk-examples/site/Python/Utilities/Animation/
@@ -34,21 +36,8 @@ class vtkTimerCallback():
     def execute(self, obj, event):
         step = 0
         while step < self.steps:
-            fileName = name[0] + "{0:03d}".format((1 + step) * 2) + name[1]
-            print(fileName)
-            reader = vtkXMLPolyDataReader()
-            reader.SetFileName(fileName)
-            reader.Update()
-            polydata = reader.GetOutput()
-            polydata = slice_polydata(polydata, 10)
-            #print(get_numpy_pts(polydata))
-            global last
-            print ( get_numpy_pts(polydata) - last)
-            last = get_numpy_pts(polydata)
-            self.mapper.SetInputData(polydata)
-
-            polydata.GetPointData().SetActiveScalars("mass")
-            rang = polydata.GetPointData().GetScalars().GetRange()
+            polydata_total[step].GetPointData().SetActiveScalars("mass")
+            rang = polydata_total[step].GetPointData().GetScalars().GetRange()
 
             self.mapper.SetScalarRange(rang)
             self.mapper.SetScaleFactor(0.2)  # radius
@@ -65,6 +54,7 @@ class vtkTimerCallback():
                 "  diffuseColor *= scale;\n"
                 "}\n"
             )
+            self.mapper.SetInputData(polydata_total[step])
 
             iren = obj
             iren.GetRenderWindow().Render()
@@ -91,6 +81,26 @@ def trace_particle(data_dir: str, particle_ids: list):
     name.append(name_parts[0])
     name.append(name_parts[1])
 
+    global polydata_total
+    print("Start Loading")
+    percentage = 10
+    for step in range(TOTAL_STEPS):
+        fileName = name[0] + "{0:03d}".format((1 + step) * 2) + name[1]
+        # print(fileName)
+        reader = vtkXMLPolyDataReader()
+        reader.SetFileName(fileName)
+        reader.Update()
+        polydata = reader.GetOutput()
+        polydata.GetPointData().SetActiveScalars("mass")
+        polydata = slice_polydata(polydata, 20)
+        polydata_total.append(polydata)
+        if step / (TOTAL_STEPS - 1) * 100 >= percentage:
+            print("Loading " + str(percentage) + "% complete")
+            percentage += 10
+    print("Start Animation")
+
+
+
     fileName = name[0] + "000" + name[1]
     # print(fileName)
     reader.SetFileName(fileName)
@@ -98,9 +108,9 @@ def trace_particle(data_dir: str, particle_ids: list):
 
 
     polydata = reader.GetOutput()
-    polydata = slice_polydata(polydata, 10)
-    global last
-    last = get_numpy_pts(polydata)
+    #polydata = slice_polydata(polydata, 10)
+    #global last
+    #last = get_numpy_pts(polydata)
     polydata.GetPointData().SetActiveScalars("mass")
     rang = polydata.GetPointData().GetScalars().GetRange()
 
@@ -146,9 +156,9 @@ def trace_particle(data_dir: str, particle_ids: list):
     renderWindowInteractor.Initialize()
 
     # Sign up to receive TimerEvent
-    cb = vtkTimerCallback(311, actor, renderWindowInteractor, mapper)
+    cb = vtkTimerCallback(TOTAL_STEPS - 1, actor, renderWindowInteractor, mapper)
     renderWindowInteractor.AddObserver('TimerEvent', cb.execute)
-    cb.timerId = renderWindowInteractor.CreateRepeatingTimer(500)
+    cb.timerId = renderWindowInteractor.CreateRepeatingTimer(700)
 
     # start the interaction and timer
     renderWindow.Render()
