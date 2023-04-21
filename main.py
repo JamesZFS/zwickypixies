@@ -60,7 +60,7 @@ def main():
     config.File = filename
     config.ArrayName = 'mass'
     polydata = reader.GetOutput()
-    print_meta_data(polydata)
+    print_meta_data(slice_polydata(polydata, 200))
 
     # The code below shows how to dump first 100 points into another vtp file (for cheaper visualization)
     # sliced = slice_polydata(polydata, 100)
