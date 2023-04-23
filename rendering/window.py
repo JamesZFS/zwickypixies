@@ -14,6 +14,7 @@ from dataops.interpolator import Interpolator
 import config
 from helpers import *
 
+
 class _Window(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
         QtWidgets.QMainWindow.__init__(self, parent)
@@ -43,7 +44,7 @@ class _Window(QtWidgets.QMainWindow):
         self.bottomBarFilterLabel = None
         self.currActor = None  # point data
         self.interpolator = None  # interpolator for the scan plane
-        self.legend = None # Legend for the colorbar
+        self.legend = None  # Legend for the colorbar
 
         self.initMenuBar()
         self.initBottomBar()
@@ -59,8 +60,9 @@ class _Window(QtWidgets.QMainWindow):
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
 
+        menubar.addSeparator()
         # Animation control
-        #TODO: Implement animation logics
+        # TODO: Implement animation logics
         play_icon = QtGui.QIcon("resources/icons/play.png")
         play_action = QtWidgets.QAction(self)
         play_action.setIcon(play_icon)
@@ -76,6 +78,16 @@ class _Window(QtWidgets.QMainWindow):
         stop_action.setIcon(stop_icon)
         stop_action.triggered.connect(self.stopAnimation)
         menubar.addAction(stop_action)
+        back_icon = QtGui.QIcon("resources/icons/back.png")
+        back_action = QtWidgets.QAction(self)
+        back_action.setIcon(back_icon)
+        back_action.triggered.connect(self.backAnimation)
+        menubar.addAction(back_action)
+        forward_icon = QtGui.QIcon("resources/icons/forward.png")
+        forward_action = QtWidgets.QAction(self)
+        forward_action.setIcon(forward_icon)
+        forward_action.triggered.connect(self.forwardAnimation)
+        menubar.addAction(forward_action)
 
     def initToolBar(self):
         toolbar = QtWidgets.QToolBar(self)
@@ -111,7 +123,7 @@ class _Window(QtWidgets.QMainWindow):
         toolbar.addSeparator()
         '''
         # Filtering
-        #TODO: Implement selection of arrays via this selection type
+        # TODO: Implement selection of arrays via this selection type
         groupBox = QtWidgets.QGroupBox()
         groupBox.setStyleSheet("QGroupBox { background-color: transparent; border: none; }")
         layout = QtWidgets.QVBoxLayout()
@@ -204,7 +216,8 @@ class _Window(QtWidgets.QMainWindow):
 
     def updateBottomBarText(self):
         self.bottomBarFileLabel.setText(" File: " + config.File)
-        self.bottomBarArrayNameLabel.setText("| Current Array: ({})  Range: [{:.5f}, {:.5f}]".format(config.ArrayName, config.RangeMin, config.RangeMax))
+        self.bottomBarArrayNameLabel.setText(
+            "| Current Array: ({})  Range: [{:.5f}, {:.5f}]".format(config.ArrayName, config.RangeMin, config.RangeMax))
         self.bottomBarThresholdLabel.setText("| Threshold: [{}, {}]".format(config.ThresholdMin, config.ThresholdMax))
         self.bottomBarFilterLabel.setText("| Filter: ({})".format(config.Filter))
 
@@ -256,16 +269,16 @@ class _Window(QtWidgets.QMainWindow):
     def onFilterComboBoxChange(self, index):
         filter = self.sender().currentText()
         self.updateActor(filter=filter)
-    
+
     def onPointOpacitySliderChange(self, value):
         if not self.currActor: return
-        alpha = value/100
+        alpha = value / 100
         self.currActor.GetProperty().SetOpacity(alpha ** 2.4)
         self.refresh()
 
     def onScanPlaneSliderChange(self, value):
         if not self.interpolator: return
-        alpha = value/100
+        alpha = value / 100
         self.interpolator.set_plane_z(alpha * config.CoordMax)
         self.refresh()
 
@@ -305,11 +318,18 @@ class _Window(QtWidgets.QMainWindow):
     def haltAnimation(self):
         print('Stopping animation...')
 
+    def forwardAnimation(self):
+        print('Stopping animation...')
+
+    def backAnimation(self):
+        print('Stopping animation...')
+
     def stopAnimation(self):
         print('Stopping animation...')
 
     def openFile(self):
-        filename, _filter = QtWidgets.QFileDialog.getOpenFileName(self, 'Open File', os.getenv('HOME'),'VTP Files (*.vtp)',
+        filename, _filter = QtWidgets.QFileDialog.getOpenFileName(self, 'Open File', os.getenv('HOME'),
+                                                                  'VTP Files (*.vtp)',
                                                                   options=QtWidgets.QFileDialog.DontUseNativeDialog
                                                                   )
         if filename:
