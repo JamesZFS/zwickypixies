@@ -7,9 +7,12 @@ import sys
 from vtkmodules.vtkCommonColor import vtkNamedColors
 from PyQt5 import QtCore, QtWidgets
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
+from vtkmodules.vtkInteractionStyle import vtkInteractorStyleSwitch
 import os
 from dataops import importer
+from dataops.interpolator import Interpolator
 import config
+from helpers import *
 
 class _Window(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
@@ -24,6 +27,9 @@ class _Window(QtWidgets.QMainWindow):
         self.vl = QtWidgets.QVBoxLayout()
         self.vtkWidget = QVTKRenderWindowInteractor(self.frame)
         self.renderWindowInteractor = self.vtkWidget.GetRenderWindow().GetInteractor()
+        self.irenStyle = vtkInteractorStyleSwitch()
+        self.irenStyle.SetCurrentStyleToTrackballCamera()
+        self.renderWindowInteractor.SetInteractorStyle(self.irenStyle)
         self.vl.addWidget(self.vtkWidget)
         self.vtkWidget.GetRenderWindow().AddRenderer(self.renderer)
         self.frame.setLayout(self.vl)
@@ -35,7 +41,10 @@ class _Window(QtWidgets.QMainWindow):
         self.bottomBarArrayNameLabel = None
         self.bottomBarThresholdLabel = None
         self.bottomBarFilterLabel = None
-        self.currActor = None
+        self.currActor = None  # point data
+        self.interpolator = None  # interpolator for the scan plane
+        self.legend = None # Legend for the colorbar
+
         self.initMenuBar()
         self.initBottomBar()
         self.initToolBar()
@@ -64,6 +73,7 @@ class _Window(QtWidgets.QMainWindow):
         label = QtWidgets.QLabel("Array:")
         arrayComboBox = QtWidgets.QComboBox()
         arrayComboBox.addItems(config.ArrayNameList)
+        arrayComboBox.setCurrentIndex(config.ArrayNameList.index(config.ArrayName))
         arrayComboBox.setFixedWidth(100)
         arrayComboBox.currentIndexChanged.connect(self.onArrayComboBoxChange)
         layout.addRow(label, arrayComboBox)
@@ -80,6 +90,51 @@ class _Window(QtWidgets.QMainWindow):
         layout.addRow(label, filterComboBox)
         toolbar.addWidget(widget)
         toolbar.addSeparator()
+
+        # Move the "scan" plane with GUI
+        widget = QtWidgets.QWidget()
+        layout = QtWidgets.QFormLayout(widget)
+        label = QtWidgets.QLabel("Point Opacity:")
+        pointOpacitySlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        pointOpacitySlider.setRange(0, 100)  # percentage
+        pointOpacitySlider.setValue(50)
+        pointOpacitySlider.valueChanged.connect(self.onPointOpacitySliderChange)
+        layout.addRow(label, pointOpacitySlider)
+        toolbar.addWidget(widget)
+        toolbar.addSeparator()
+
+        widget = QtWidgets.QWidget()
+        layout = QtWidgets.QFormLayout(widget)
+        label = QtWidgets.QLabel("Scan Plane Z:")
+        scanPlaneSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        scanPlaneSlider.setRange(0, 100)  # percentage
+        scanPlaneSlider.setValue(50)
+        scanPlaneSlider.valueChanged.connect(self.onScanPlaneSliderChange)
+        layout.addRow(label, scanPlaneSlider)
+        toolbar.addWidget(widget)
+        toolbar.addSeparator()
+
+        # TODO two threshold inputboxes to select partial data
+
+        # TODO two range inputboxes for color map control
+
+        widget = QtWidgets.QWidget()
+        layout = QtWidgets.QFormLayout(widget)
+        label = QtWidgets.QLabel("Kernel Sharpness:")
+        kernelSharpnessInput = QtWidgets.QLineEdit()
+        kernelSharpnessInput.setText('10')
+        kernelSharpnessInput.returnPressed.connect(self.onKernelSharpnessChange)
+        self.kernelSharpnessInput = kernelSharpnessInput
+        layout.addRow(label, kernelSharpnessInput)
+
+        label = QtWidgets.QLabel("Kernel Radius:")
+        kernelRadiusInput = QtWidgets.QLineEdit()
+        kernelRadiusInput.setText('3')
+        kernelRadiusInput.returnPressed.connect(self.onKernelRadiusChange)
+        self.kernelRadiusInput = kernelRadiusInput
+        layout.addRow(label, kernelRadiusInput)
+
+        toolbar.addWidget(widget)
 
     def initBottomBar(self):
         bottomBar = QtWidgets.QFrame(self.frame)
@@ -121,10 +176,10 @@ class _Window(QtWidgets.QMainWindow):
 
     def initActor(self, actor: vtkActor):
         self.currActor = actor
-        self.renderer.AddActor(self.currActor)
+        self._pointDataChanged(actor)
         self.renderer.SetBackground(vtkNamedColors().GetColor3d('DimGray'))
-        self.renderer.GetActiveCamera().Pitch(90)
-        self.renderer.GetActiveCamera().SetViewUp(0, 0, 1)
+        self.renderer.GetActiveCamera().Yaw(-20)
+        self.renderer.GetActiveCamera().SetViewUp(0, 1, 0)
         self.renderer.ResetCamera()
         self.updateBottomBarText()
 
@@ -133,11 +188,23 @@ class _Window(QtWidgets.QMainWindow):
             actor = importer.getActor(array_name, filename, filter)
         else:
             actor = importer.getActor(config.ArrayName, filename, filter)
-        self.renderer.RemoveActor(self.currActor)
-        self.currActor = actor
+        self._pointDataChanged(actor)
         self.bottomBarFileLabel.setText(" " + config.File)
-        self.renderer.AddActor(self.currActor)
         self.refresh()
+
+    def _pointDataChanged(self, actor: vtkActor):
+        # Update the actors of point and related filters
+        assert actor is not None
+        if self.currActor: self.renderer.RemoveActor(self.currActor)
+        if self.interpolator: self.renderer.RemoveActor(self.interpolator.get_plane_actor())
+        if self.legend: self.renderer.RemoveActor(self.legend)
+        self.currActor = actor
+        polydata = actor.GetMapper().GetInput()
+        self.interpolator = Interpolator(polydata)
+        self.legend = create_legend(config.Lut)
+        self.renderer.AddActor(self.currActor)
+        self.renderer.AddActor(self.interpolator.get_plane_actor())
+        self.renderer.AddActor(self.legend)
 
     def refresh(self):
         self.renderWindowInteractor.Render()
@@ -149,11 +216,48 @@ class _Window(QtWidgets.QMainWindow):
 
     def onArrayComboBoxChange(self, index):
         array_name = self.sender().currentText()
-        self.updateActor(array_name=array_name)
+        self.updateActor(array_name=array_name)  # reload data every time? probably slow
+        # todo: consider make a more narrow api for updating array name
 
     def onFilterComboBoxChange(self, index):
         filter = self.sender().currentText()
         self.updateActor(filter=filter)
+    
+    def onPointOpacitySliderChange(self, value):
+        if not self.currActor: return
+        alpha = value/100
+        self.currActor.GetProperty().SetOpacity(alpha ** 2.4)
+        self.refresh()
+
+    def onScanPlaneSliderChange(self, value):
+        if not self.interpolator: return
+        alpha = value/100
+        self.interpolator.set_plane_z(alpha * config.CoordMax)
+        self.refresh()
+
+    def onKernelSharpnessChange(self):
+        if not self.interpolator: return
+        try:
+            sharpness = float(self.kernelSharpnessInput.text())
+        except ValueError:
+            return
+        if sharpness < 0: sharpness = 0
+        print('kernel sharpness: ', sharpness)
+        self.kernelSharpnessInput.setText(str(sharpness))
+        self.interpolator.set_kernel_sharpness(sharpness)
+        self.refresh()
+
+    def onKernelRadiusChange(self):
+        if not self.interpolator: return
+        try:
+            radius = float(self.kernelRadiusInput.text())
+        except ValueError:
+            return
+        if radius < 0: radius = 0
+        print('kernel radius: ', radius)
+        self.kernelRadiusInput.setText(str(radius))
+        self.interpolator.set_kernel_radius(radius)
+        self.refresh()
 
     def openFile(self):
         filename, _filter = QtWidgets.QFileDialog.getOpenFileName(self, 'Open File', os.getenv('HOME'),'VTP Files (*.vtp)',

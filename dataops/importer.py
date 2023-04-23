@@ -37,6 +37,8 @@ def getMapper(polydata, array_name: str, filter: str = None):
         "  diffuseColor *= scale;\n"
         "}\n"
     )
+    mapper.SetLookupTable(config.Lut)
+    
     return mapper
 
 def getActor(array_name: str, filename: str = None, filter: str = None):
@@ -46,5 +48,6 @@ def getActor(array_name: str, filename: str = None, filter: str = None):
         config.File = filename
     actor = vtkActor()
     actor.SetMapper(getMapper(getPolyData(config.File), config.ArrayName, filter))
+    actor.GetProperty().SetOpacity(0.2)
     return actor
 

@@ -4,3 +4,4 @@ __pycache__/
 *.vtp
 .DS_STORE
 .idea
+.ipynb_checkpoints
