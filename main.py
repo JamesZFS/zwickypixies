@@ -1,7 +1,4 @@
-import vtkmodules.vtkInteractionStyle
-import vtkmodules.vtkRenderingOpenGL2
 from vtkmodules.vtkCommonColor import vtkNamedColors
-from vtkmodules.vtkCommonCore import vtkLookupTable
 from vtkmodules.vtkIOXML import vtkXMLPolyDataReader, vtkXMLPolyDataWriter
 from vtkmodules.vtkFiltersSources import vtkPlaneSource
 from vtkmodules.vtkCommonDataModel import vtkPolyData
@@ -19,13 +16,14 @@ from vtkmodules.vtkRenderingCore import (
 )
 from vtkmodules.vtkRenderingAnnotation import vtkScalarBarActor
 
-import numpy as np
+from vtkmodules.vtkIOXML import vtkXMLPolyDataReader
+from rendering.window import startWindow
 from helpers import *
-from filters import *
+from dataops.filters import *
 from animation import *
-from conf import *
+from dataops.importer import getActor
 
-
+import config
 
 def get_program_parameters():
     import argparse
@@ -39,6 +37,7 @@ def get_program_parameters():
 
 
 def visualize_pts(polydata, array_name, filename):
+    raise DeprecationWarning('Use startWindow(...) instead')
     # Visualize as point gaussians, with a string array_name specifying the array to use for color
     colors = vtkNamedColors()
 
@@ -56,8 +55,13 @@ def visualize_pts(polydata, array_name, filename):
     # lut.Build()
 
     polydata.GetPointData().SetActiveScalars(array_name)
-    range = polydata.GetPointData().GetScalars().GetRange()
 
+    #polydata = mask_points(polydata, array_name, 'star')
+    #polydata = threshold_points(polydata, 'mu', 0.0, 0.7)
+    range = polydata.GetPointData().GetScalars().GetRange()
+    config.RangeMin = range[0]
+    config.RangeMax = range[1]
+    print(range)
     point_mapper = vtkPointGaussianMapper()
     point_mapper.SetInputData(polydata)
     point_mapper.SetScalarRange(range)
@@ -152,36 +156,25 @@ def visualize_pts(polydata, array_name, filename):
     renderWindowInteractor.Start()
 
 
-def main():
-    filename = get_program_parameters()
 
+
+def main():
+    config.Lut = create_lookup_table('rainbow')
+    filename = get_program_parameters()
     # Read all the data from the file
     reader = vtkXMLPolyDataReader()
     reader.SetFileName(filename)
     reader.Update()
-
+    config.File = filename
+    config.ArrayName = 'mass'
+    config.Legend = create_legend(config.ArrayName, config.Lut)
     polydata = reader.GetOutput()
     print_meta_data(polydata)
 
-    # The code below shows how to dump first 100 points into another vtp file (for cheaper visualization)
-    # sliced = slice_polydata(polydata, 100)
-    # print_meta_data(sliced)
-    # writer = vtkXMLPolyDataWriter()
-    # writer.SetFileName('points.100.vtp')
-    # writer.SetInputData(sliced)
-    # writer.Write()
-
-    # The code below shows how to get the points and mass arrays as numpy arrays
-    # pts = get_numpy_pts(polydata)
-    # mass = get_numpy_array(polydata, 'mass')
-    # print('Points: ', pts)
-    # print('Mass: ', mass)
-
-    # Switch to different array_name to visualize different properties
-    # visualize_pts(polydata, 'mass', filename)
-    visualize_pts(polydata, 'phi', filename)
+    point_actor = getActor(config.ArrayName, filename)
+    startWindow(point_actor)
 
 
 if __name__ == '__main__':
     main()
-    
+# 

@@ -2,6 +2,9 @@
 
 import numpy as np
 from vtkmodules.vtkCommonDataModel import vtkPolyData
+from vtkmodules.vtkRenderingAnnotation import vtkScalarBarActor
+from vtkmodules.vtkCommonCore import vtkLookupTable
+
 
 # A list of array names and a dictionary to map array names to indices
 index_to_array_name = []
@@ -76,3 +79,38 @@ def get_numpy_array(polydata, array_name):
 def get_numpy_pts(polydata):
     # Convert the points to a numpy array
     return np.array(polydata.GetPoints().GetData())
+
+
+def create_lookup_table(mode: str = 'rainbow', prebuild = False):
+    # Set up color map
+    lut = vtkLookupTable()
+
+    if mode == 'rainbow':
+        lut.SetHueRange(0.667, 0.0)
+        lut.SetSaturationRange(1.0, 1.0)
+        lut.SetValueRange(1.0, 1.0)
+    elif mode == 'gray':
+        lut.SetHueRange(0, 0)
+        lut.SetSaturationRange(0, 0)
+        lut.SetValueRange(0.2, 1.0)
+    else:
+        raise ValueError(f'Unknown color mode: {mode}')
+
+    if prebuild:
+        lut.SetNumberOfColors(256)
+        lut.Build()
+    
+    return lut
+
+
+def create_legend(title, lut: vtkLookupTable):
+    # Render a color map legend at the right side of the window
+    legend = vtkScalarBarActor()
+    legend.SetLookupTable(lut)
+    legend.SetNumberOfLabels(8)
+    legend.SetTitle(title)
+    legend.SetVerticalTitleSeparation(6)
+    legend.GetPositionCoordinate().SetValue(0.92, 0.1)
+    legend.SetWidth(0.06)
+    
+    return legend
