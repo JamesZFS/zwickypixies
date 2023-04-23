@@ -1,6 +1,3 @@
-# TODO: Cyrill, please implement the functions in this file if you are interested
-
-
 from vtkmodules.vtkCommonColor import vtkNamedColors
 
 from vtkmodules.vtkIOXML import vtkXMLPolyDataReader
@@ -9,6 +6,28 @@ from vtkmodules.vtkRenderingCore import (
     vtkActor,
     vtkPointGaussianMapper
 )
+
+"""
+    To use:
+    1. create Animation
+    2. load data
+    (2.1 set Attribute)
+    3. initialize animation
+    4. bind to renderwindowinteractor
+    5. start animation
+    
+    e.g:
+    anim = Animation("data/Cosmolog/Full.cosmo.000.vtk")
+    anim.loadData()
+    anim.setAtribute("mass")
+    anim.initAnimation()
+    anim.addToRenderer(renderWindowInteractor, 500)
+    anim.startAnimation()
+    
+    
+    animation can be paused with anim.stopAnimation()
+    and continued with anim.startAnimation()
+"""
 
 
 class vtkTimerCallback():
@@ -19,21 +38,21 @@ class vtkTimerCallback():
         self.timerId = None
 
     def execute(self, obj, event):
-        stepped = self.animation.nextTimeStep()
-        self.iren.GetRenderWindow().Render()
-        if not stepped:
-            self.iren.DestroyTimer(self.timerId)
+        if self.animation.rendering:
+            stepped = self.animation.nextTimeStep()
+            self.iren.GetRenderWindow().Render()
+            #if not stepped:
+            #    self.iren.DestroyTimer(self.timerId)
 
 class Animation:
     def __init__(self, filename: str):
+        self.rendering = True
         self.filename = filename
         self.dataLoaded = False
         self.currentTime = 0
         self.attribute = "mass"
         self.actor = vtkActor()
         self.mapper = vtkPointGaussianMapper()
-        #self.mapper.SetInputData(polydata[0])
-        #self.mapper.SetScalarRange(rang)
         self.mapper.SetScaleFactor(0.2)  # radius
         self.mapper.EmissiveOff()
         self.mapper.SetSplatShaderCode(
@@ -52,15 +71,14 @@ class Animation:
         self.polydata = []
         self.timeSteps = 312
 
-    def loadData(self):
-        self.loadData(self.filename)
 
-    def loadData(self, filename: str):
+
+    def loadData(self):
         reader = vtkXMLPolyDataReader()
         colors = vtkNamedColors()
 
         # split path arround file number
-        name_parts = re.split(r'\d\d\d', filename)
+        name_parts = re.split(r'\d\d\d', self.filename)
         name = [name_parts[0], name_parts[1]]
 
         print("Start Loading")
@@ -105,6 +123,7 @@ class Animation:
         if not self.dataLoaded:
             Exception("Data Not loaded")
         self.polydata[self.currentTime].GetPointData().SetActiveScalars(self.attribute)
+        self.mapper.SetScalarRange(self.polydata[self.currentTime].GetPointData().GetScalars().GetRange())
         self.mapper.SetInputData(self.polydata[self.currentTime])
         self.mapper.Update()
 
@@ -112,3 +131,9 @@ class Animation:
         cb = vtkTimerCallback(self, renderWindowInteractor)
         renderWindowInteractor.AddObserver('TimerEvent', cb.execute)
         cb.timerId = renderWindowInteractor.CreateRepeatingTimer(time)
+
+    def stopAnimation(self):
+        self.rendering = False
+
+    def startAnimation(self):
+        self.rendering = True
