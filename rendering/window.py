@@ -5,7 +5,7 @@ from vtkmodules.vtkRenderingCore import (
 )
 import sys
 from vtkmodules.vtkCommonColor import vtkNamedColors
-from PyQt5 import QtCore, QtWidgets
+from PyQt5 import QtCore, QtWidgets, QtGui
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 from vtkmodules.vtkInteractionStyle import vtkInteractorStyleSwitch
 import os
@@ -59,6 +59,24 @@ class _Window(QtWidgets.QMainWindow):
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
 
+        # Animation control
+        #TODO: Implement animation logics
+        play_icon = QtGui.QIcon("resources/icons/play.png")
+        play_action = QtWidgets.QAction(self)
+        play_action.setIcon(play_icon)
+        play_action.triggered.connect(self.playAnimation)
+        menubar.addAction(play_action)
+        halt_icon = QtGui.QIcon("resources/icons/halt.png")
+        halt_action = QtWidgets.QAction(self)
+        halt_action.setIcon(halt_icon)
+        halt_action.triggered.connect(self.haltAnimation)
+        menubar.addAction(halt_action)
+        stop_icon = QtGui.QIcon("resources/icons/stop.png")
+        stop_action = QtWidgets.QAction(self)
+        stop_action.setIcon(stop_icon)
+        stop_action.triggered.connect(self.stopAnimation)
+        menubar.addAction(stop_action)
+
     def initToolBar(self):
         toolbar = QtWidgets.QToolBar(self)
         toolbar.setOrientation(QtCore.Qt.Vertical)
@@ -70,7 +88,7 @@ class _Window(QtWidgets.QMainWindow):
         # Create the QWidget to hold the label and the QComboBox
         widget = QtWidgets.QWidget()
         layout = QtWidgets.QFormLayout(widget)
-        label = QtWidgets.QLabel("Array:")
+        label = QtWidgets.QLabel("Metric:")
         arrayComboBox = QtWidgets.QComboBox()
         arrayComboBox.addItems(config.ArrayNameList)
         arrayComboBox.setCurrentIndex(config.ArrayNameList.index(config.ArrayName))
@@ -80,6 +98,7 @@ class _Window(QtWidgets.QMainWindow):
         toolbar.addWidget(widget)
         toolbar.addSeparator()
 
+        '''
         widget = QtWidgets.QWidget()
         layout = QtWidgets.QFormLayout(widget)
         label = QtWidgets.QLabel("Filter:")
@@ -89,6 +108,20 @@ class _Window(QtWidgets.QMainWindow):
         filterComboBox.currentIndexChanged.connect(self.onFilterComboBoxChange)
         layout.addRow(label, filterComboBox)
         toolbar.addWidget(widget)
+        toolbar.addSeparator()
+        '''
+        # Filtering
+        #TODO: Implement selection of arrays via this selection type
+        groupBox = QtWidgets.QGroupBox("Filters:")
+        layout = QtWidgets.QVBoxLayout()
+        entry_list = ["Dark Matter", "Baryon", "Stars", "Winds", "Gas", "AGN"]
+        for entry in entry_list:
+            checkBox = QtWidgets.QCheckBox(entry)
+            checkBox.stateChanged.connect(lambda state, text=entry: self.onArrayCheckStateChanged(state, text))
+            layout.addWidget(checkBox)
+
+        groupBox.setLayout(layout)
+        toolbar.addWidget(groupBox)
         toolbar.addSeparator()
 
         # Move the "scan" plane with GUI
@@ -258,6 +291,21 @@ class _Window(QtWidgets.QMainWindow):
         self.kernelRadiusInput.setText(str(radius))
         self.interpolator.set_kernel_radius(radius)
         self.refresh()
+
+    def onArrayCheckStateChanged(self, state, text):
+        if state == QtCore.Qt.Checked:
+            print(f"{text} is checked")
+        else:
+            print(f"{text} is unchecked")
+
+    def playAnimation(self):
+        print('Playing animation...')
+
+    def haltAnimation(self):
+        print('Stopping animation...')
+
+    def stopAnimation(self):
+        print('Stopping animation...')
 
     def openFile(self):
         filename, _filter = QtWidgets.QFileDialog.getOpenFileName(self, 'Open File', os.getenv('HOME'),'VTP Files (*.vtp)',
