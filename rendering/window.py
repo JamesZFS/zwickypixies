@@ -112,7 +112,8 @@ class _Window(QtWidgets.QMainWindow):
         '''
         # Filtering
         #TODO: Implement selection of arrays via this selection type
-        groupBox = QtWidgets.QGroupBox("Filters:")
+        groupBox = QtWidgets.QGroupBox()
+        groupBox.setStyleSheet("QGroupBox { background-color: transparent; border: none; }")
         layout = QtWidgets.QVBoxLayout()
         entry_list = ["Dark Matter", "Baryon", "Stars", "Winds", "Gas", "AGN"]
         for entry in entry_list:
