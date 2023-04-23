@@ -1,7 +1,13 @@
 # VTK Polydata helpers
 
 import numpy as np
+from mpl_toolkits.mplot3d import axes3d
+import matplotlib
+import matplotlib.pyplot as plt
 from vtkmodules.vtkCommonDataModel import vtkPolyData
+from vtkmodules.vtkRenderingAnnotation import vtkScalarBarActor
+from vtkmodules.vtkCommonCore import vtkLookupTable
+
 
 # A list of array names and a dictionary to map array names to indices
 index_to_array_name = []
@@ -39,16 +45,16 @@ def print_meta_data(polydata):
         array_name_to_index[name] = i
 
     # Investigate the first point
-    print()
-    print('First point: ', polydata.GetPoint(0))
+    # print()
+    # print('First point: ', polydata.GetPoint(0))
 
-    # Print the array data for the first point
-    for i in range(polydata.GetPointData().GetNumberOfArrays()):
-        name = polydata.GetPointData().GetArrayName(i)
-        dim = polydata.GetPointData().GetArray(i).GetNumberOfComponents()
-        dtype = polydata.GetPointData().GetArray(i).GetDataTypeAsString()
-        print(
-            f'Array {i:2}: {name:5} = {polydata.GetPointData().GetArray(i).GetTuple(0)}')
+    # # Print the array data for the first point
+    # for i in range(polydata.GetPointData().GetNumberOfArrays()):
+    #     name = polydata.GetPointData().GetArrayName(i)
+    #     dim = polydata.GetPointData().GetArray(i).GetNumberOfComponents()
+    #     dtype = polydata.GetPointData().GetArray(i).GetDataTypeAsString()
+    #     print(
+    #         f'Array {i:2}: {name:5} = {polydata.GetPointData().GetArray(i).GetTuple(0)}')
 
     print()
 
@@ -76,3 +82,91 @@ def get_numpy_array(polydata, array_name):
 def get_numpy_pts(polydata):
     # Convert the points to a numpy array
     return np.array(polydata.GetPoints().GetData())
+
+
+def plt_vector_field(x:np.ndarray, y:np.ndarray, z:np.ndarray, u:np.ndarray, v:np.ndarray, w:np.ndarray, demo=False):
+    """
+    Input Parameters
+
+    x,y,z (numpy.ndarray, z is optional): An array representing x,y,z-coordinates of the points in the 3D grid.
+    u (numpy.ndarray): An array representing x-components of the vector field.
+    v (numpy.ndarray): An array representing y-components of the vector field.
+    w (numpy.ndarray is optional): An array representing z-components of the vector field.
+    """
+    matplotlib.use('tkagg')
+    fig = plt.figure()
+    ax=fig.add_subplot(projection="3d")
+    if demo:
+        x, y, z = np.meshgrid(np.arange(-2, 2, 0.5),
+                            np.arange(-2, 2, 0.5),
+                            np.arange(-2, 2, 0.5))
+
+        u = 3*(np.sin(np.pi * x) * np.cos(np.pi * y) * np.cos(np.pi * z))
+        v = x+y+z#2*(x+y) * np.sin(np.pi * y) * np.cos(np.pi * z)
+        w = x**2#(x+z)*(x-y)*1.2
+    ax.quiver(x, y, z, v, u, w, length=0.1, cmap='viridis')
+    #ax.scatter(x, y, z, c=u, cmap='viridis')
+
+    plt.show()
+
+
+def plt_scatter_plot(x, y, z=None, c=None, cmap='viridis', demo=False):
+    """
+    Create a 3D scatter plot using matplotlib.
+
+    Parameters:
+        - x (numpy.ndarray): An array representing x-coordinates of the points.
+        - y (numpy.ndarray): An array representing y-coordinates of the points.
+        - z (numpy.ndarray, optional): An array representing z-coordinates of the points.
+        - c (numpy.ndarray or None, optional): An array representing the color of each point. If None, default color
+                                              will be used. Default is None.
+        - cmap (str, optional): The colormap to use for coloring the points. Default is 'viridis'.
+    """
+    if z is not None:
+        fig = plt.figure()
+        ax = fig.add_subplot(projection='3d')
+        if demo:
+            x = np.random.rand(1000)  # Generate random x-coordinates
+            y = np.random.rand(1000)  # Generate random y-coordinates
+            z = np.random.rand(1000)  # Generate random z-coordinates
+            c = np.random.rand(1000)  # Generate random color values 
+        ax.scatter(x, y, z, c=c, cmap=cmap)
+        plt.show()
+    else:
+        plt.plot(x, y, c=c, cmap=cmap)
+
+
+def create_lookup_table(mode: str = 'rainbow', prebuild = False):
+    # Set up color map
+    lut = vtkLookupTable()
+
+    if mode == 'rainbow':
+        lut.SetHueRange(0.667, 0.0)
+        lut.SetSaturationRange(1.0, 1.0)
+        lut.SetValueRange(1.0, 1.0)
+    elif mode == 'gray':
+        lut.SetHueRange(0, 0)
+        lut.SetSaturationRange(0, 0)
+        lut.SetValueRange(0.2, 1.0)
+    else:
+        raise ValueError(f'Unknown color mode: {mode}')
+
+    if prebuild:
+        lut.SetNumberOfColors(256)
+        lut.Build()
+    
+    return lut
+
+
+def create_legend(lut: vtkLookupTable, title=None):
+    # Render a color map legend at the right side of the window
+    legend = vtkScalarBarActor()
+    legend.SetLookupTable(lut)
+    legend.SetNumberOfLabels(8)
+    if title: legend.SetTitle(title)
+    legend.SetVerticalTitleSeparation(6)
+    legend.GetPositionCoordinate().SetValue(0.92, 0.1)
+    legend.SetWidth(0.06)
+    
+    return legend
+
