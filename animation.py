@@ -1,154 +1,114 @@
 # TODO: Cyrill, please implement the functions in this file if you are interested
 
-import vtkmodules.vtkInteractionStyle
-import vtkmodules.vtkRenderingOpenGL2
+
 from vtkmodules.vtkCommonColor import vtkNamedColors
-from vtkmodules.vtkCommonDataModel import vtkPolyData
-from vtkmodules.vtkFiltersSources import vtkSphereSource
+
 from vtkmodules.vtkIOXML import vtkXMLPolyDataReader
 import re
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
-    vtkPolyDataMapper,
-    vtkPointGaussianMapper,
-    vtkRenderWindow,
-    vtkRenderWindowInteractor,
-    vtkRenderer
+    vtkPointGaussianMapper
 )
 
-from helpers import print_meta_data, slice_polydata, get_numpy_pts
-
-name = []
-TOTAL_STEPS = 312
-polydata_total = []
 
 class vtkTimerCallback():
     # INSPIRED FROM https://kitware.github.io/vtk-examples/site/Python/Utilities/Animation/
-    def __init__(self, steps, actor, iren, mapper):
-        self.timer_count = 0
-        self.steps = steps
-        self.actor = actor
-        self.mapper = mapper
+    def __init__(self, animation, iren):
+        self.animation = animation
         self.iren = iren
         self.timerId = None
 
     def execute(self, obj, event):
-        step = 0
-        while step < self.steps:
-            polydata_total[step].GetPointData().SetActiveScalars("mass")
-            rang = polydata_total[step].GetPointData().GetScalars().GetRange()
+        stepped = self.animation.nextTimeStep()
+        self.iren.GetRenderWindow().Render()
+        if not stepped:
+            self.iren.DestroyTimer(self.timerId)
 
-            self.mapper.SetScalarRange(rang)
-            self.mapper.SetScaleFactor(0.2)  # radius
-            self.mapper.EmissiveOff()
-            self.mapper.SetSplatShaderCode(
-                # copied from https://kitware.github.io/vtk-examples/site/Python/Meshes/PointInterpolator/
-                "//VTK::Color::Impl\n"
-                "float dist = dot(offsetVCVSOutput.xy,offsetVCVSOutput.xy);\n"
-                "if (dist > 1.0) {\n"
-                "  discard;\n"
-                "} else {\n"
-                "  float scale = (1.0 - dist);\n"
-                "  ambientColor *= scale;\n"
-                "  diffuseColor *= scale;\n"
-                "}\n"
-            )
-            self.mapper.SetInputData(polydata_total[step])
+class Animation:
+    def __init__(self, filename: str):
+        self.filename = filename
+        self.dataLoaded = False
+        self.currentTime = 0
+        self.attribute = "mass"
+        self.actor = vtkActor()
+        self.mapper = vtkPointGaussianMapper()
+        #self.mapper.SetInputData(polydata[0])
+        #self.mapper.SetScalarRange(rang)
+        self.mapper.SetScaleFactor(0.2)  # radius
+        self.mapper.EmissiveOff()
+        self.mapper.SetSplatShaderCode(
+            # copied from https://kitware.github.io/vtk-examples/site/Python/Meshes/PointInterpolator/
+            "//VTK::Color::Impl\n"
+            "float dist = dot(offsetVCVSOutput.xy,offsetVCVSOutput.xy);\n"
+            "if (dist > 1.0) {\n"
+            "  discard;\n"
+            "} else {\n"
+            "  float scale = (1.0 - dist);\n"
+            "  ambientColor *= scale;\n"
+            "  diffuseColor *= scale;\n"
+            "}\n"
+        )
+        self.actor.SetMapper(self.mapper)
+        self.polydata = []
+        self.timeSteps = 312
 
-            iren = obj
-            iren.GetRenderWindow().Render()
-            self.timer_count += 1
-            step += 1
-        if self.timerId:
-            iren.DestroyTimer(self.timerId)
+    def loadData(self):
+        self.loadData(self.filename)
 
-
-def trace_particle(data_dir: str, particle_ids: list):
-    '''
-    Trace the particles specified by the particle_ids list and render them as a set of animated spheres
-
-    data_dir: directory of the cosmo data
-    particle_ids: list of particle ids to trace
-    '''
-    # I'm not sure how to do this yet, but I think vtk has some animation support
-    # https://kitware.github.io/vtk-examples/site/Python/Utilities/Animation/
-    reader = vtkXMLPolyDataReader()
-    colors = vtkNamedColors()
-
-    # split path arround file number
-    name_parts = re.split(r'\d\d\d', data_dir)
-    name.append(name_parts[0])
-    name.append(name_parts[1])
-
-    global polydata_total
-    print("Start Loading")
-    percentage = 10
-    for step in range(TOTAL_STEPS):
-        fileName = name[0] + "{0:03d}".format((1 + step) * 2) + name[1]
-        # print(fileName)
+    def loadData(self, filename: str):
         reader = vtkXMLPolyDataReader()
-        reader.SetFileName(fileName)
-        reader.Update()
-        polydata = reader.GetOutput()
-        polydata.GetPointData().SetActiveScalars("mass")
-        #polydata = slice_polydata(polydata, 20)
-        polydata_total.append(polydata)
-        if step / (TOTAL_STEPS - 1) * 100 >= percentage:
-            print("Loading " + str(percentage) + "% complete")
-            percentage += 10
-    print("Start Animation")
+        colors = vtkNamedColors()
 
-    rang = polydata_total[0].GetPointData().GetScalars().GetRange()
+        # split path arround file number
+        name_parts = re.split(r'\d\d\d', filename)
+        name = [name_parts[0], name_parts[1]]
 
-    mapper = vtkPointGaussianMapper()
-    mapper.SetInputData(polydata_total[0])
-    mapper.SetScalarRange(rang)
-    mapper.SetScaleFactor(0.2)  # radius
-    mapper.EmissiveOff()
-    mapper.SetSplatShaderCode(
-        # copied from https://kitware.github.io/vtk-examples/site/Python/Meshes/PointInterpolator/
-        "//VTK::Color::Impl\n"
-        "float dist = dot(offsetVCVSOutput.xy,offsetVCVSOutput.xy);\n"
-        "if (dist > 1.0) {\n"
-        "  discard;\n"
-        "} else {\n"
-        "  float scale = (1.0 - dist);\n"
-        "  ambientColor *= scale;\n"
-        "  diffuseColor *= scale;\n"
-        "}\n"
-    )
+        print("Start Loading")
+        percentage = 10
+        for step in range(self.timeSteps):
+            path = name[0] + "{0:03d}".format((1 + step) * 2) + name[1]
+            reader = vtkXMLPolyDataReader()
+            reader.SetFileName(path)
+            reader.Update()
+            polydata = reader.GetOutput()
+            # polydata.GetPointData().SetActiveScalars("mass")
+            # polydata = slice_polydata(polydata, 20)
+            self.polydata.append(polydata)
+            if step / (self.timeSteps - 1) * 100 >= percentage:
+                print("Loading " + str(percentage) + "% complete")
+                percentage += 10
+        self.dataLoaded = True
+        self.currentTime = 0
+        print("Finished Loading")
 
-    actor = vtkActor()
-    actor.SetMapper(mapper)
+    def setAtribute(self, attr="mass"):
+        self.attribute = attr
 
-    renderer = vtkRenderer()
-    renderWindow = vtkRenderWindow()
-    renderWindow.AddRenderer(renderer)
-    renderWindowInteractor = vtkRenderWindowInteractor()
-    renderWindowInteractor.SetRenderWindow(renderWindow)
+    def getActor(self):
+        return self.actor
 
-    renderer.SetBackground(colors.GetColor3d('DimGray'))
-    renderer.GetActiveCamera().Pitch(90)
-    renderer.GetActiveCamera().SetViewUp(0, 0, 1)
-    renderer.GetActiveCamera().SetPosition(-10, 0, 0)
-    renderer.ResetCamera()
+    def initAnimation(self, startTime=0):
+        if startTime >= self.timeSteps:
+            Exception("To late time step")
 
-    renderWindow.SetWindowName("Animation")
+        self.currentTime = startTime
+        self._loadTime()
 
-    # Add the actor to the scene
-    renderer.AddActor(actor)
+    def nextTimeStep(self):
+        if self.currentTime + 1 >= self.timeSteps:
+            return False
+        self.currentTime += 1
+        self._loadTime()
+        return True
 
-    # Initialize must be called prior to creating timer events.
-    renderWindowInteractor.Initialize()
+    def _loadTime(self):
+        if not self.dataLoaded:
+            Exception("Data Not loaded")
+        self.polydata[self.currentTime].GetPointData().SetActiveScalars(self.attribute)
+        self.mapper.SetInputData(self.polydata[self.currentTime])
+        self.mapper.Update()
 
-    # Sign up to receive TimerEvent
-    cb = vtkTimerCallback(TOTAL_STEPS, actor, renderWindowInteractor, mapper)
-    renderWindowInteractor.AddObserver('TimerEvent', cb.execute)
-    cb.timerId = renderWindowInteractor.CreateRepeatingTimer(1000)
-    # start the interaction and timer
-    renderWindow.Render()
-    renderWindow.SetSize(900, 900)
-    renderWindowInteractor.Start()
-
-
-
+    def addToRenderer(self, renderWindowInteractor, time=500):
+        cb = vtkTimerCallback(self, renderWindowInteractor)
+        renderWindowInteractor.AddObserver('TimerEvent', cb.execute)
+        cb.timerId = renderWindowInteractor.CreateRepeatingTimer(time)
