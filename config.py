@@ -26,5 +26,4 @@ NumPoints = 'None'
 CoordMax = 64  # max x/y/z coordinate value
 CellRes = 50  # number of cells in each dimension during interpolation 
 
-Lut = None  # Lookup table for coloring the particles
-Legend = None # Legend for the colorbar
+Lut = None  # Lookup table for coloring the particles, shared by different actors

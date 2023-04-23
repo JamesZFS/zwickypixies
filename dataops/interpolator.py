@@ -16,7 +16,7 @@ class Interpolator:
         self.polydata = polydata
         
         self.plane_source = vtkPlaneSource()
-        self.plane_source.SetOrigin(0, 0, config.CoordMax / 2)  # TODO: move the "scan" plane with GUI
+        self.plane_source.SetOrigin(0, 0, config.CoordMax / 2)
         self.plane_source.SetPoint1(config.CoordMax, 0, config.CoordMax / 2)
         self.plane_source.SetPoint2(0, config.CoordMax, config.CoordMax / 2)
         self.plane_source.SetResolution(config.CellRes, config.CellRes)
@@ -24,7 +24,7 @@ class Interpolator:
 
         # Interpolate from the point data to the cell data on the plane
         self.gaussian_kernel = vtkGaussianKernel()
-        self.gaussian_kernel.SetSharpness(10)  # TODO: make it a GUI slider
+        self.gaussian_kernel.SetSharpness(10)
         self.gaussian_kernel.SetRadius(3)
 
         interpolator = vtkPointInterpolator()
@@ -63,4 +63,8 @@ class Interpolator:
 
     def set_kernel_sharpness(self, sharpness):
         self.gaussian_kernel.SetSharpness(sharpness)
+        self.gaussian_kernel.Modified()
+    
+    def set_kernel_radius(self, radius):
+        self.gaussian_kernel.SetRadius(radius)
         self.gaussian_kernel.Modified()

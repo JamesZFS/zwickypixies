@@ -103,12 +103,12 @@ def create_lookup_table(mode: str = 'rainbow', prebuild = False):
     return lut
 
 
-def create_legend(title, lut: vtkLookupTable):
+def create_legend(lut: vtkLookupTable, title=None):
     # Render a color map legend at the right side of the window
     legend = vtkScalarBarActor()
     legend.SetLookupTable(lut)
     legend.SetNumberOfLabels(8)
-    legend.SetTitle(title)
+    if title: legend.SetTitle(title)
     legend.SetVerticalTitleSeparation(6)
     legend.GetPositionCoordinate().SetValue(0.92, 0.1)
     legend.SetWidth(0.06)
