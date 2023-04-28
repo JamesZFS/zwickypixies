@@ -1,11 +1,12 @@
-from vtkmodules.vtkCommonColor import vtkNamedColors
-
 from vtkmodules.vtkIOXML import vtkXMLPolyDataReader
 import re
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
     vtkPointGaussianMapper
 )
+from tqdm import tqdm
+from os.path import isdir
+from helpers import slice_polydata
 
 """
     To use:
@@ -45,9 +46,10 @@ class vtkTimerCallback():
             #    self.iren.DestroyTimer(self.timerId)
 
 class Animation:
-    def __init__(self, filename: str):
+    def __init__(self, dirname: str, stepStart: int, stepEnd: int, numParticles=100, cycle=True):
         self.rendering = True
-        self.filename = filename
+        self.dirname = dirname # path to directory containing the vtp files
+        assert isdir(dirname), "dirname must be a directory"
         self.dataLoaded = False
         self.currentTime = 0
         self.attribute = "mass"
@@ -69,35 +71,23 @@ class Animation:
         )
         self.actor.SetMapper(self.mapper)
         self.polydata = []
-        self.timeSteps = 312
-
-
+        self.stepRange = range(max(0, stepStart), min(312, stepEnd))
+        self.cycle = cycle
+        self.numParticles = numParticles
 
     def loadData(self):
         reader = vtkXMLPolyDataReader()
-        colors = vtkNamedColors()
-
-        # split path arround file number
-        name_parts = re.split(r'\d\d\d', self.filename)
-        name = [name_parts[0], name_parts[1]]
-
-        print("Start Loading")
-        percentage = 10
-        for step in range(self.timeSteps):
-            path = name[0] + "{0:03d}".format((1 + step) * 2) + name[1]
+        for step in tqdm(self.stepRange, desc='Loading Data'):
+            path = f'{self.dirname}/Full.cosmo.{step * 2:03d}.vtp'
             reader = vtkXMLPolyDataReader()
             reader.SetFileName(path)
             reader.Update()
             polydata = reader.GetOutput()
-            # polydata.GetPointData().SetActiveScalars("mass")
-            # polydata = slice_polydata(polydata, 20)
+            polydata = slice_polydata(polydata, self.numParticles)
             self.polydata.append(polydata)
-            if step / (self.timeSteps - 1) * 100 >= percentage:
-                print("Loading " + str(percentage) + "% complete")
-                percentage += 10
+
         self.dataLoaded = True
         self.currentTime = 0
-        print("Finished Loading")
 
     def setAtribute(self, attr="mass"):
         self.attribute = attr
@@ -106,22 +96,25 @@ class Animation:
         return self.actor
 
     def initAnimation(self, startTime=0):
-        if startTime >= self.timeSteps:
-            Exception("To late time step")
+        if startTime >= self.stepRange.stop:
+            raise Exception("To late time step")
 
         self.currentTime = startTime
         self._loadTime()
 
     def nextTimeStep(self):
-        if self.currentTime + 1 >= self.timeSteps:
-            return False
         self.currentTime += 1
+        if self.currentTime >= self.stepRange.stop:
+            if self.cycle:
+                self.currentTime = self.stepRange.start
+                return True
+            else:
+                return False
         self._loadTime()
         return True
 
     def _loadTime(self):
-        if not self.dataLoaded:
-            Exception("Data Not loaded")
+        assert self.dataLoaded
         self.polydata[self.currentTime].GetPointData().SetActiveScalars(self.attribute)
         self.mapper.SetScalarRange(self.polydata[self.currentTime].GetPointData().GetScalars().GetRange())
         self.mapper.SetInputData(self.polydata[self.currentTime])
@@ -137,3 +130,50 @@ class Animation:
 
     def startAnimation(self):
         self.rendering = True
+
+
+def main():
+    # noinspection PyUnresolvedReferences
+    import vtkmodules.vtkInteractionStyle
+    # noinspection PyUnresolvedReferences
+    import vtkmodules.vtkRenderingOpenGL2
+    from vtkmodules.vtkCommonColor import vtkNamedColors
+    from vtkmodules.vtkRenderingCore import (
+        vtkRenderWindow,
+        vtkRenderWindowInteractor,
+        vtkRenderer
+    )
+
+    colors = vtkNamedColors()
+
+    # Setup a renderer, render window, and interactor
+    renderer = vtkRenderer()
+    renderer.SetBackground(colors.GetColor3d("MistyRose"))
+    renderWindow = vtkRenderWindow()
+    renderWindow.SetWindowName("Animation")
+    renderWindow.AddRenderer(renderer)
+    renderWindow.SetSize(512, 512)
+
+    renderWindowInteractor = vtkRenderWindowInteractor()
+    renderWindowInteractor.SetRenderWindow(renderWindow)
+
+    # Initialize must be called prior to creating timer events.
+    renderWindowInteractor.Initialize()
+
+    # Add the actor to the scene
+    anim = Animation("data", 0, 50)
+    renderer.AddActor(anim.getActor())
+    anim.loadData()
+    anim.setAtribute("mass")
+    anim.initAnimation()
+    # Add the actor to the scene
+    anim.addToRenderer(renderWindowInteractor, 50)
+    anim.startAnimation()
+
+    # start the interaction and timer
+    renderWindow.Render()
+    renderWindowInteractor.Start()
+
+
+if __name__ == '__main__':
+    main()
