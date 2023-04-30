@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 from vtkmodules.vtkCommonDataModel import vtkPolyData
 from vtkmodules.vtkRenderingAnnotation import vtkScalarBarActor
 from vtkmodules.vtkCommonCore import vtkLookupTable
+import argparse
+from scipy.interpolate import interp1d
 
 
 # A list of array names and a dictionary to map array names to indices
@@ -136,25 +138,55 @@ def plt_scatter_plot(x, y, z=None, c=None, cmap='viridis', demo=False):
         plt.plot(x, y, c=c, cmap=cmap)
 
 
-def create_lookup_table(mode: str = 'rainbow', prebuild = False):
-    # Set up color map
+def create_lookup_table_from_array(colors: np.ndarray, num_table_entries: int = 256):
+    assert colors.shape[1] == 3, 'Colors must be a Nx3 array'
+    # Build a 1d interpolation function from the given color array
+    x = np.linspace(0, 1, colors.shape[0])
+    color_map = interp1d(x, colors, axis=0)
+
     lut = vtkLookupTable()
+    lut.SetScaleToLinear()
+    lut.SetNumberOfTableValues(num_table_entries)
+    for i, x in enumerate(np.linspace(0, 1, num_table_entries)):
+        r, g, b = color_map(x)
+        lut.SetTableValue(i, r, g, b)
+    
+    return lut
+
+
+def create_lookup_table(mode: str = 'coolwarm', num_table_entries: int = 256):
+    # Set up color map
 
     if mode == 'rainbow':
+        lut = vtkLookupTable()
         lut.SetHueRange(0.667, 0.0)
         lut.SetSaturationRange(1.0, 1.0)
         lut.SetValueRange(1.0, 1.0)
+        lut.SetNumberOfColors(num_table_entries)
+        lut.Build()
     elif mode == 'gray':
+        lut = vtkLookupTable()
         lut.SetHueRange(0, 0)
         lut.SetSaturationRange(0, 0)
         lut.SetValueRange(0.2, 1.0)
+        lut.SetNumberOfColors(num_table_entries)
+        lut.Build()
+    elif mode == 'coolwarm':
+        colors = np.array([
+            [0.6980, 0.0941, 0.1686],  # Red
+            [0.8392, 0.3765, 0.3020],
+            [0.9569, 0.6471, 0.5098],
+            [0.9922, 0.8588, 0.7804],
+            [0.9686, 0.9686, 0.9686],  # White
+            [0.8196, 0.8980, 0.9412],
+            [0.5725, 0.7725, 0.8706],
+            [0.2627, 0.5765, 0.7647],
+            [0.1294, 0.4000, 0.6745],  # Blue
+        ])
+        lut = create_lookup_table_from_array(np.flip(colors, axis=0), num_table_entries)
     else:
         raise ValueError(f'Unknown color mode: {mode}')
 
-    if prebuild:
-        lut.SetNumberOfColors(256)
-        lut.Build()
-    
     return lut
 
 
@@ -170,3 +202,12 @@ def create_legend(lut: vtkLookupTable, title=None):
     
     return legend
 
+
+def get_program_parameters():
+    description = 'Visualize a cosmology simulation polydata (vtp) file.'
+    epilogue = ''
+    parser = argparse.ArgumentParser(description=description, epilog=epilogue,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('filename', help='path to Full.cosmo.xxx.vtp')
+    args = parser.parse_args()
+    return args.filename

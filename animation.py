@@ -6,7 +6,7 @@ from vtkmodules.vtkRenderingCore import (
 )
 from tqdm import tqdm
 from os.path import isdir
-from helpers import slice_polydata
+from helpers import *
 
 """
     To use:

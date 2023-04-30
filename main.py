@@ -7,19 +7,8 @@ from rendering.window import *
 import config
 
 
-def get_program_parameters():
-    import argparse
-    description = 'Visualize a cosmology simulation polydata (vtp) file.'
-    epilogue = ''
-    parser = argparse.ArgumentParser(description=description, epilog=epilogue,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('filename', help='path to Full.cosmo.xxx.vtp')
-    args = parser.parse_args()
-    return args.filename
-
-
 def main():
-    config.Lut = create_lookup_table('rainbow')
+    config.Lut = create_lookup_table('coolwarm')
     filename = get_program_parameters()
     reader = vtkXMLPolyDataReader()
     reader.SetFileName(filename)
