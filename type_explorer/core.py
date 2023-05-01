@@ -1,5 +1,4 @@
 import vtk
-import numpy as np
 import helpers
 
 
@@ -124,6 +123,18 @@ def create_renderer(actors):
     return ren
 
 
+def create_default_property_map() -> dict:
+    colors = vtk.vtkNamedColors()
+    return {
+        'agn':    (colors.GetColor3d('OrangeRed'),  0.9, 0.9),  # (color, opacity, radius)
+        'star':   (colors.GetColor3d('Yellow'),     0.6, 0.2),
+        'wind':   (colors.GetColor3d('Fuchsia'),    0.6, 0.3),
+        'gas':    (colors.GetColor3d('Lime'),       0.6, 0.2),
+        'baryon': (colors.GetColor3d('Snow'),       0.1, 0.05),
+        'dm':     (colors.GetColor3d('RoyalBlue'),  0.1, 0.05),
+    }
+
+
 def main():
     filename = helpers.get_program_parameters()
 
@@ -138,14 +149,7 @@ def main():
 
     # color different types
     colors = vtk.vtkNamedColors()
-    property_map = {
-        'agn':    (colors.GetColor3d('Red'),        0.9, 0.8),  # (color, opacity, radius)
-        'star':   (colors.GetColor3d('Yellow'),     0.6, 0.2),
-        'wind':   (colors.GetColor3d('Aqua'),       0.6, 0.3),
-        'gas':    (colors.GetColor3d('Lime'),       0.6, 0.2),
-        'baryon': (colors.GetColor3d('Snow'),       0.2, 0.1),
-        'dm':     (colors.GetColor3d('RoyalBlue'),  0.2, 0.1),
-    }
+    property_map = create_default_property_map()
 
     # visualize type information
     type_actors = {name: create_point_actor(data) for name, data in type_polydata.items()}

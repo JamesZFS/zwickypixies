@@ -37,18 +37,18 @@ def getMapper(polydata, array_name: str, filter: str = None):
     mapper.SetScalarRange(range)
     mapper.SetScaleFactor(0.2)  # radius
     mapper.EmissiveOff()
-    mapper.SetSplatShaderCode(
-        # copied from https://kitware.github.io/vtk-examples/site/Python/Meshes/PointInterpolator/
-        "//VTK::Color::Impl\n"
-        "float dist = dot(offsetVCVSOutput.xy,offsetVCVSOutput.xy);\n"
-        "if (dist > 1.0) {\n"
-        "  discard;\n"
-        "} else {\n"
-        "  float scale = (1.0 - dist);\n"
-        "  ambientColor *= scale;\n"
-        "  diffuseColor *= scale;\n"
-        "}\n"
-    )
+    # mapper.SetSplatShaderCode(
+    #     # copied from https://kitware.github.io/vtk-examples/site/Python/Meshes/PointInterpolator/
+    #     "//VTK::Color::Impl\n"
+    #     "float dist = dot(offsetVCVSOutput.xy,offsetVCVSOutput.xy);\n"
+    #     "if (dist > 1.0) {\n"
+    #     "  discard;\n"
+    #     "} else {\n"
+    #     "  float scale = (1.0 - dist);\n"
+    #     "  ambientColor *= scale;\n"
+    #     "  diffuseColor *= scale;\n"
+    #     "}\n"
+    # )
     mapper.SetLookupTable(config.Lut)
     
     return mapper
