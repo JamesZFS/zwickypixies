@@ -1,7 +1,20 @@
 import vtk
 import numpy as np
 import helpers
-from collections import Counter
+
+
+# copied from https://kitware.github.io/vtk-examples/site/Python/Meshes/PointInterpolator/
+splat_shader_code = '''
+//VTK::Color::Impl\n
+float dist = dot(offsetVCVSOutput.xy,offsetVCVSOutput.xy);\n
+if (dist > 1.0) {\n
+    discard;\n
+} else {\n
+    float scale = (1.0 - dist);\n
+    ambientColor *= scale;\n
+    diffuseColor *= scale;\n
+}\n
+'''
 
 
 def decode_mask(mask: int, return_dict: bool = False):
@@ -30,90 +43,57 @@ def decode_mask(mask: int, return_dict: bool = False):
         return 'baryon'
 
 
-def count_particle_types(polydata: vtk.vtkPolyData):
-    # convert to numpy array
-    masks = helpers.get_numpy_array(polydata, 'mask')
-
-    # count number of points in each mask
-    mask_counts = np.unique(masks, return_counts=True)
-    counter = Counter(dict(zip(mask_counts[0], mask_counts[1])))
-
-    # pretty print the counter
-    print('Mask counts:')
-    for key, value in counter.items():
-        
-        # decode mask
-        mask = decode_mask(key, return_dict=True)
-        desc = 'dark matter' if mask['is_dm'] else 'baryon'
-        if mask['is_star']: desc += ', star'
-        if mask['is_wind']: desc += ', wind'
-        if mask['is_gas']: desc += ', gas'
-        if mask['is_agn']: desc += ', agn'
-
-        print(f'{key} ({desc}): {value}')
-
-
-def assign_color_array(polydata: vtk.vtkPolyData):
-    named_colors = vtk.vtkNamedColors()
-    # Add a color array to the polydata based on the particle types
-    color_map = {
-        'agn': named_colors.GetColor3d('OrangeRed'),
-        'dm': named_colors.GetColor3d('RoyalBlue'),
-        'star': named_colors.GetColor3d('Yellow'),
-        'wind': named_colors.GetColor3d('LimeGreen'),
-        'gas': named_colors.GetColor3d('LightGrey'),
-        'baryon': named_colors.GetColor3d('WhiteSmoke'),
-    }
-    # color_map['agn'].SetAlpha(1.0)
-    # color_map['dm'].SetAlpha(0.1)
-    # color_map['star'].SetAlpha(0.7)
-    # color_map['wind'].SetAlpha(0.7)
-    # color_map['gas'].SetAlpha(0.7)
-    # color_map['baryon'].SetAlpha(0.2)
-
-    # create a color array
-    colors = vtk.vtkFloatArray()
-    colors.SetNumberOfComponents(3)
-    colors.SetName('colors')
-
+def split_particles(polydata: vtk.vtkPolyData):
+    # Split polydata into multiple polydata based on the mask
     mask_array: vtk.vtkUnsignedShortArray = polydata.GetPointData().GetArray('mask')
 
-    # assign colors to each point
+    # create a dictionary of polydata
+    def make_polydata():
+        data = vtk.vtkPolyData()
+        data.SetPoints(vtk.vtkPoints())
+        return data
+    
+    type_names = ['agn', 'star', 'wind', 'gas', 'baryon', 'dm']
+    type_polydata = {name: make_polydata() for name in type_names}
+
+    # scatter points into the corresponding polydata
     for i in range(polydata.GetNumberOfPoints()):
-        ptype = decode_mask(mask_array.GetValue(i))
-        color = color_map[ptype]
-        colors.InsertNextTuple(color)
+        mask = mask_array.GetValue(i)
+        name = decode_mask(mask)
+        type_polydata[name].GetPoints().InsertNextPoint(polydata.GetPoint(i))
 
-    polydata.GetPointData().AddArray(colors)
+    # check counts
+    assert sum([type_polydata[name].GetNumberOfPoints() for name in type_names]) == polydata.GetNumberOfPoints()
+
+    # pretty print counts
+    for name, data in type_polydata.items():
+        num = data.GetNumberOfPoints()
+        percent = num / polydata.GetNumberOfPoints() * 100
+        print(f'{name:8} {num:8} {percent:9.3f} %')
+    
+    return type_polydata
 
 
-def create_actor(polydata: vtk.vtkPolyData):
+def create_point_actor(polydata: vtk.vtkPolyData, color: vtk.vtkColor3d = None, opacity: float = None, radius: float = None):
     mapper = vtk.vtkPointGaussianMapper()
     mapper.SetInputData(polydata)
-    # mapper.SetScalarRange(range)
-    # mapper.ScalarVisibilityOff()
-    mapper.SetScaleFactor(0.2)  # radius
+    mapper.ScalarVisibilityOff()
     mapper.EmissiveOff()
-    mapper.SetSplatShaderCode(
-        # copied from https://kitware.github.io/vtk-examples/site/Python/Meshes/PointInterpolator/
-        "//VTK::Color::Impl\n"
-        "float dist = dot(offsetVCVSOutput.xy,offsetVCVSOutput.xy);\n"
-        "if (dist > 1.0) {\n"
-        "  discard;\n"
-        "} else {\n"
-        "  float scale = (1.0 - dist);\n"
-        "  ambientColor *= scale;\n"
-        "  diffuseColor *= scale;\n"
-        "}\n"
-    )
+    # mapper.SetSplatShaderCode(splat_shader_code)
+    if radius is not None: mapper.SetScaleFactor(radius)
 
     actor = vtk.vtkActor()
     actor.SetMapper(mapper)
-    # actor.GetProperty().SetPointSize(2)
-    # actor.GetProperty().SetOpacity(0.4)
-    # actor.GetProperty().SetColor(1, 0, 0)
+    if color is not None: actor.GetProperty().SetColor(color)
+    if opacity is not None: actor.GetProperty().SetOpacity(opacity)
 
     return actor
+
+
+def update_view_property(actor: vtk.vtkActor, color: vtk.vtkColor3d, opacity: float, radius: float):
+    actor.GetProperty().SetColor(color)
+    actor.GetProperty().SetOpacity(opacity)
+    actor.GetMapper().SetScaleFactor(radius)
 
 
 def create_renderer(actors):
@@ -154,13 +134,26 @@ def main():
     reader.Update()
     polydata: vtk.vtkPolyData = reader.GetOutput()
 
-    count_particle_types(polydata)
-    assign_color_array(polydata)
+    type_polydata = split_particles(polydata)
+
+    # color different types
+    colors = vtk.vtkNamedColors()
+    property_map = {
+        'agn':    (colors.GetColor3d('Red'),        0.9, 0.8),  # (color, opacity, radius)
+        'star':   (colors.GetColor3d('Yellow'),     0.6, 0.2),
+        'wind':   (colors.GetColor3d('Aqua'),       0.6, 0.3),
+        'gas':    (colors.GetColor3d('Lime'),       0.6, 0.2),
+        'baryon': (colors.GetColor3d('Snow'),       0.2, 0.1),
+        'dm':     (colors.GetColor3d('RoyalBlue'),  0.2, 0.1),
+    }
 
     # visualize type information
-    polydata.GetPointData().SetActiveScalars('colors')
-    point_actor = create_actor(polydata)
-    renderer = create_renderer([point_actor])
+    type_actors = {name: create_point_actor(data) for name, data in type_polydata.items()}
+    for name, actor in type_actors.items():
+        update_view_property(actor, *property_map[name])
+    
+    # render!
+    renderer = create_renderer(type_actors.values())
 
 
 if __name__ == '__main__':
