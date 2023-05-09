@@ -19,8 +19,6 @@ class _Window(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
         QtWidgets.QMainWindow.__init__(self, parent)
         self.renderer = vtkRenderer()
-        self.renderWindow = vtkRenderWindow()
-        self.renderWindow.AddRenderer(self.renderer)
         self.app = QtWidgets.QApplication(sys.argv)
         self.frame = QtWidgets.QFrame()
         self.resize(2048, 1024)
