@@ -1,6 +1,8 @@
 from vtkmodules.vtkCommonDataModel import vtkPolyData
 from vtkmodules.vtkCommonCore import vtkPoints, vtkDoubleArray
-
+from vtkmodules.util.numpy_support import vtk_to_numpy, numpy_to_vtk
+from vtkmodules.vtkFiltersCore import vtkThreshold
+import numpy as np
 import config
 
 
@@ -16,44 +18,41 @@ def mask_points(polydata: vtkPolyData, array_name: str, particle_type: str = Non
     if not particle_type or particle_type == 'None':
         return polydata
 
-    mask_array = polydata.GetPointData().GetArray('mask')
-    data_array = polydata.GetPointData().GetArray(array_name)
-    masked_polydata = vtkPolyData()
-    masked_points = vtkPoints()
-    masked_scalars = vtkDoubleArray()
-    masked_scalars.SetName(array_name)
+    mask_array = vtk_to_numpy(polydata.GetPointData().GetArray('mask')).astype(np.int32)
+    data_array = vtk_to_numpy(polydata.GetPointData().GetArray(array_name))
+    points_array = vtk_to_numpy(polydata.GetPoints().GetData())
 
-    for i in range(polydata.GetNumberOfPoints()):
-        mask = int(mask_array.GetValue(i))
-        is_dm =     ((mask & 0b000000010) == 0)
-        is_baryon = not is_dm
-        is_star =   ((mask & 0b000100000) != 0) and is_baryon
-        is_wind =   ((mask & 0b001000000) != 0) and is_baryon
-        is_gas =    ((mask & 0b010000000) != 0) and is_baryon
-        is_agn =    ((mask & 0b100000000) != 0) and is_dm
+    is_dm = ((mask_array & 0b000000010) == 0)
+    is_baryon = ~is_dm
+    is_star = ((mask_array & 0b000100000) != 0) & is_baryon
+    is_wind = ((mask_array & 0b001000000) != 0) & is_baryon
+    is_gas = ((mask_array & 0b010000000) != 0) & is_baryon
+    is_agn = ((mask_array & 0b100000000) != 0) & is_dm
 
-        if particle_type == 'dm' and is_dm:
-            masked_points.InsertNextPoint(polydata.GetPoint(i))
-            masked_scalars.InsertNextValue(data_array.GetValue(i))
-        elif particle_type == 'baryon' and is_baryon:
-            masked_points.InsertNextPoint(polydata.GetPoint(i))
-            masked_scalars.InsertNextValue(data_array.GetValue(i))
-        elif particle_type == 'star' and is_star:
-            masked_points.InsertNextPoint(polydata.GetPoint(i))
-            masked_scalars.InsertNextValue(data_array.GetValue(i))
-        elif particle_type == 'wind' and is_wind:
-            masked_points.InsertNextPoint(polydata.GetPoint(i))
-            masked_scalars.InsertNextValue(data_array.GetValue(i))
-        elif particle_type == 'gas' and is_gas:
-            masked_points.InsertNextPoint(polydata.GetPoint(i))
-            masked_scalars.InsertNextValue(data_array.GetValue(i))
-        elif particle_type == 'agn' and is_agn:
-            masked_points.InsertNextPoint(polydata.GetPoint(i))
-            masked_scalars.InsertNextValue(data_array.GetValue(i))
+    particle_mask = None
+    if particle_type == 'dm':
+        particle_mask = is_dm
+    elif particle_type == 'baryon':
+        particle_mask = is_baryon
+    elif particle_type == 'star':
+        particle_mask = is_star
+    elif particle_type == 'wind':
+        particle_mask = is_wind
+    elif particle_type == 'gas':
+        particle_mask = is_gas
+    elif particle_type == 'agn':
+        particle_mask = is_agn
 
-    masked_polydata.SetPoints(masked_points)
-    masked_polydata.GetPointData().SetScalars(masked_scalars)
-    return masked_polydata
+    if particle_mask is not None:
+        masked_points = points_array[particle_mask]
+        masked_scalars = data_array[particle_mask]
+
+        masked_polydata = vtkPolyData()
+        masked_polydata.SetPoints(numpy_to_vtk(masked_points))
+        masked_polydata.GetPointData().SetScalars(numpy_to_vtk(masked_scalars, deep=True, array_type=vtkDoubleArray))
+        return masked_polydata
+    else:
+        return polydata
 
 
 def threshold_points(polydata: vtkPolyData, array_name: str, threshold_min: float = None, threshold_max: float = None):
@@ -69,21 +68,13 @@ def threshold_points(polydata: vtkPolyData, array_name: str, threshold_min: floa
     if threshold_min and threshold_max:
         config.ThresholdMin = threshold_min
         config.ThresholdMax = threshold_max
-    data_array = polydata.GetPointData().GetArray(array_name)
-    filtered_polydata = vtkPolyData()
-    filtered_points = vtkPoints()
-    filtered_scalars = vtkDoubleArray()
-    filtered_scalars.SetName(array_name)
 
-    for i in range(polydata.GetNumberOfPoints()):
-        data = data_array.GetValue(i)
-        if config.ThresholdMin <= data <= config.ThresholdMax:
-            filtered_points.InsertNextPoint(polydata.GetPoint(i))
-            filtered_scalars.InsertNextValue(data)
+    threshold_filter = vtkThreshold()
+    threshold_filter.SetInputData(polydata)
+    threshold_filter.SetInputArrayToProcess(0, 0, 0, vtkThreshold.POINTS, array_name)
+    threshold_filter.ThresholdBetween(config.ThresholdMin, config.ThresholdMax)
+    threshold_filter.Update()
 
-    filtered_polydata.SetPoints(filtered_points)
-    filtered_polydata.GetPointData().SetScalars(filtered_scalars)
-
-    return filtered_polydata
+    return threshold_filter.GetOutput()
 
     
