@@ -1,16 +1,7 @@
-from vtkmodules.vtkIOXML import vtkXMLPolyDataReader
 from animation import *
-import vtkmodules.vtkInteractionStyle
-import vtkmodules.vtkRenderingOpenGL2
-from vtkmodules.vtkCommonDataModel import vtkPolyData
-from vtkmodules.vtkFiltersSources import vtkSphereSource
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
-    vtkPolyDataMapper,
-    vtkPointGaussianMapper,
-    vtkRenderWindow,
-    vtkRenderWindowInteractor,
-    vtkRenderer
+    vtkPointGaussianMapper
 )
 from dataops.filters import mask_points
 import config
@@ -29,11 +20,12 @@ def getMapper(polydata, array_name: str, filter: str = None):
         config.Filter = filter
     polydata = mask_points(polydata, config.ArrayName, config.Filter)
     polydata.GetPointData().SetActiveScalars(array_name)
+    #THRESHOLD PORTING
     range = polydata.GetPointData().GetScalars().GetRange()
     config.RangeMin = range[0]
     config.RangeMax = range[1]
     mapper = vtkPointGaussianMapper()
-    mapper.SetInputData(polydata)
+    mapper.SetInputData(polydata) #SetInputConnection
     mapper.SetScalarRange(range)
     mapper.SetScaleFactor(0.2)  # radius
     mapper.EmissiveOff()

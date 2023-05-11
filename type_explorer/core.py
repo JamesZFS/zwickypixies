@@ -1,6 +1,6 @@
 import vtk
 import helpers
-
+from dataops import filters
 
 # copied from https://kitware.github.io/vtk-examples/site/Python/Meshes/PointInterpolator/
 splat_shader_code = '''
@@ -51,7 +51,7 @@ def split_particles(polydata: vtk.vtkPolyData):
         data = vtk.vtkPolyData()
         data.SetPoints(vtk.vtkPoints())
         return data
-    
+
     type_names = ['agn', 'star', 'wind', 'gas', 'baryon', 'dm']
     type_polydata = {name: make_polydata() for name in type_names}
 
@@ -69,11 +69,12 @@ def split_particles(polydata: vtk.vtkPolyData):
         num = data.GetNumberOfPoints()
         percent = num / polydata.GetNumberOfPoints() * 100
         print(f'{name:8} {num:8} {percent:9.3f} %')
-    
+
     return type_polydata
 
 
-def create_point_actor(polydata: vtk.vtkPolyData, color: vtk.vtkColor3d = None, opacity: float = None, radius: float = None):
+def create_point_actor(polydata: vtk.vtkPolyData, color: vtk.vtkColor3d = None, opacity: float = None,
+                       radius: float = None):
     mapper = vtk.vtkPointGaussianMapper()
     mapper.SetInputData(polydata)
     mapper.ScalarVisibilityOff()
@@ -114,7 +115,7 @@ def create_renderer(actors):
     ren.SetBackground(0, 0, 0)
     for actor in actors:
         ren.AddActor(actor)
-    
+
     # enable user interface interactor
     iren.Initialize()
     renWin.Render()
@@ -126,12 +127,12 @@ def create_renderer(actors):
 def create_default_property_map() -> dict:
     colors = vtk.vtkNamedColors()
     return {
-        'agn':    (colors.GetColor3d('OrangeRed'),  0.9, 0.9),  # (color, opacity, radius)
-        'star':   (colors.GetColor3d('Yellow'),     0.6, 0.2),
-        'wind':   (colors.GetColor3d('Fuchsia'),    0.6, 0.3),
-        'gas':    (colors.GetColor3d('Lime'),       0.6, 0.2),
-        'baryon': (colors.GetColor3d('Snow'),       0.1, 0.05),
-        'dm':     (colors.GetColor3d('RoyalBlue'),  0.1, 0.05),
+        'agn': (colors.GetColor3d('OrangeRed'), 0.9, 0.9),  # (color, opacity, radius)
+        'star': (colors.GetColor3d('Yellow'), 0.6, 0.2),
+        'wind': (colors.GetColor3d('Fuchsia'), 0.6, 0.3),
+        'gas': (colors.GetColor3d('Lime'), 0.6, 0.2),
+        'baryon': (colors.GetColor3d('Snow'), 0.1, 0.05),
+        'dm': (colors.GetColor3d('RoyalBlue'), 0.1, 0.05),
     }
 
 
@@ -155,7 +156,7 @@ def main():
     type_actors = {name: create_point_actor(data) for name, data in type_polydata.items()}
     for name, actor in type_actors.items():
         update_view_property(actor, *property_map[name])
-    
+
     # render!
     renderer = create_renderer(type_actors.values())
 

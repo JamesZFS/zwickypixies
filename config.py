@@ -19,9 +19,11 @@ ThresholdMin = 'None'
 ThresholdMax = 'None'
 RangeMin = 'None'
 RangeMax = 'None'
+CurrentView = 'Type Explorer'
 ArrayNameList = ['vx', 'vy', 'vz', 'mass', 'uu', 'hh', 'mu', 'rho', 'phi', 'id', 'mask']
-FilterList = ['None', 'dm', 'baryon', 'star', 'wind', 'gas', 'agn']
+FilterList = ['dm', 'baryon', 'star', 'wind', 'gas', 'agn']
 NumPoints = 'None'
+CurrentFilters = []
 
 CoordMax = 64  # max x/y/z coordinate value
 CellRes = 50  # number of cells in each dimension during interpolation 
