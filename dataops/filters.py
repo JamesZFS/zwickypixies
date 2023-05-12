@@ -23,7 +23,6 @@ def mask_points(polydata: vtkPolyData, array_name: str = None, particle_type: st
     mask_array = vtk_to_numpy(polydata.GetPointData().GetArray('mask')).astype(np.int32)
     data_array = None
     if array_name:
-        print("DATA ARRAYHAPPENING")
         data_array = vtk_to_numpy(polydata.GetPointData().GetArray(array_name))
     points_array = vtk_to_numpy(polydata.GetPoints().GetData())
 
