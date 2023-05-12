@@ -13,7 +13,7 @@ global CellRes
 global Lut
 
 File = 'None'
-ArrayName = 'None'
+ArrayName = 'phi'
 Filter = 'None'
 ThresholdMin = 'None'
 ThresholdMax = 'None'

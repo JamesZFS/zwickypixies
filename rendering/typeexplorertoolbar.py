@@ -43,9 +43,9 @@ class CollapsibleGroupBox(QtWidgets.QGroupBox):
         self.opacity = opacity
 
 
-class ToolBar(QtWidgets.QWidget):
+class TypeExplorerToolBar(QtWidgets.QWidget):
     def __init__(self, window, actors):
-        super(ToolBar, self).__init__()
+        super(TypeExplorerToolBar, self).__init__()
         self.window = window
         self.actors = actors
         self.toolbar = QtWidgets.QToolBar(self.window)

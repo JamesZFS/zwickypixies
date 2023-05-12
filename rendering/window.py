@@ -4,18 +4,17 @@ from PyQt5 import QtWidgets
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 from rendering.menubar import MenuBar
 from rendering.bottombar import BottomBar
-from rendering.toolbar import ToolBar
+from rendering.typeexplorertoolbar import TypeExplorerToolBar
+from rendering.dataviewtoolbar import DataViewToolBar
 from rendering.actors import Actors
 
 '''
     
 '''
-
-
 class Window(QtWidgets.QMainWindow):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
-        self.setWindowTitle('Particle Type Explorer')
+        self.setWindowTitle('Zwickypixies')
         self.resize(2048, 1024)
 
         self.frame = QtWidgets.QFrame(self)
@@ -42,7 +41,7 @@ class Window(QtWidgets.QMainWindow):
         self.menubar = MenuBar(self)
         self.bottombar = BottomBar(self)
         self.actors = Actors(self)
-        self.toolbar = ToolBar(self, self.actors)
+        self.toolbar = TypeExplorerToolBar(self, self.actors)
         self.set_view(config.CurrentView)
 
     def render(self):
@@ -63,12 +62,12 @@ class Window(QtWidgets.QMainWindow):
             self.actors.remove_actors()
             self.toolbar.clear()
             self.actors = Actors(self)
-            self.toolbar = ToolBar(self, self.actors)
+            self.toolbar = TypeExplorerToolBar(self, self.actors)
         elif view == 'Data View':
             self.actors.remove_actors()
             self.toolbar.clear()
             self.actors = Actors(self)
-            self.toolbar = ToolBar(self, self.actors)
+            self.toolbar = DataViewToolBar(self, self.actors)
         else:
             print("Unknown view: {}".format(view))
             exit(1)
