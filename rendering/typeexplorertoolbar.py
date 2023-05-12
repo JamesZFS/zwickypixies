@@ -18,14 +18,11 @@ class CollapsibleGroupBox(QtWidgets.QGroupBox):
         self.toggled.connect(self.on_toggled)
 
     def on_toggled(self, checked):
-        print("{} -> {}".format(checked, ~checked))
         if checked:
-            print("deactivating {}".format(self.name))
             self.layout().setContentsMargins(10, 10, 10, 10)
             self.toolbox.reactivate_actor(self.name, self.opacity)
 
         else:
-            print("reactivating {}".format(self.name))
             self.layout().setContentsMargins(0, 0, 0, 0)
             self.opacity = self.toolbox.deactivate_actor(self.name)
 
@@ -113,7 +110,7 @@ class TypeExplorerToolBar(QtWidgets.QWidget):
         return lambda: self.color_picker(name)
 
     def on_view_property_changed(self, name):
-        actor = self.actors.type_actors[name]
+        actor = self.actors.actors[name]
         color = self.actors.property_map[name][0]
         opacity = self.slider_value_to_property_value(self.opacity_sliders[name].value())
         radius = self.slider_value_to_property_value(self.radius_sliders[name].value())
@@ -122,7 +119,7 @@ class TypeExplorerToolBar(QtWidgets.QWidget):
         self.window.render()
 
     def deactivate_actor(self, name):
-        actor = self.actors.type_actors[name]
+        actor = self.actors.actors[name]
         color = self.actors.property_map[name][0]
         opacity = self.slider_value_to_property_value(self.opacity_sliders[name].value())
         radius = self.slider_value_to_property_value(self.radius_sliders[name].value())
@@ -132,7 +129,7 @@ class TypeExplorerToolBar(QtWidgets.QWidget):
         return opacity
 
     def reactivate_actor(self, name, opacity):
-        actor = self.actors.type_actors[name]
+        actor = self.actors.actors[name]
         color = self.actors.property_map[name][0]
         radius = self.slider_value_to_property_value(self.radius_sliders[name].value())
         self.actors.property_map[name] = (color, opacity, radius)
@@ -146,7 +143,7 @@ class TypeExplorerToolBar(QtWidgets.QWidget):
             self.radius_sliders[name].setValue(self.property_value_to_slider_value(radius))
             self.color_buttons[name].setStyleSheet(
                 f"background-color: rgb({color[0] * 255}, {color[1] * 255}, {color[2] * 255});")
-            actor = self.actors.type_actors[name]
+            actor = self.actors.actors[name]
             core.update_view_property(actor, color, opacity, radius)
         self.window.render()
 
@@ -167,7 +164,7 @@ class TypeExplorerToolBar(QtWidgets.QWidget):
     def color_picker(self, name):
         color = QtWidgets.QColorDialog.getColor()
         if color.isValid():
-            actor = self.actors.type_actors[name]
+            actor = self.actors.actors[name]
             r, g, b, _ = color.getRgb()
             r = r / 255.0
             g = g / 255.0

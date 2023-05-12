@@ -62,7 +62,7 @@ class MenuBar(QtWidgets.QWidget):
                                                                   options=QtWidgets.QFileDialog.DontUseNativeDialog
                                                                   )
         if filename:
-            self.window.updateActor(filename=filename)
+            self.window.open_file(filename)
 
     def close(self):
         sys.exit(0)

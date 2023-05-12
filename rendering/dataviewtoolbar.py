@@ -149,25 +149,22 @@ class DataViewToolBar(QtWidgets.QWidget):
         self.window.addToolBar(QtCore.Qt.RightToolBarArea, self.toolbar)
 
     def onArrayComboBoxChange(self, index):
-        array_name = self.sender().currentText()
-        self.updateActor(array_name=array_name)  # reload data every time? probably slow
-        # todo: consider make a more narrow api for updating array name
+        pass #TODO
 
     def onFilterComboBoxChange(self, index):
-        filter = self.sender().currentText()
-        self.updateActor(filter=filter)
+        pass #TODO
 
     def onPointOpacitySliderChange(self, value):
         if not self.currActor: return
         alpha = value / 100
         self.currActor.GetProperty().SetOpacity(alpha ** 2.4)
-        self.refresh()
+        self.window.render()
 
     def onScanPlaneSliderChange(self, value):
         if not self.interpolator: return
         alpha = value / 100
         self.interpolator.set_plane_z(alpha * config.CoordMax)
-        self.refresh()
+        self.window.render()
 
     def onKernelSharpnessChange(self):
         if not self.interpolator: return
@@ -179,7 +176,7 @@ class DataViewToolBar(QtWidgets.QWidget):
         print('kernel sharpness: ', sharpness)
         self.kernelSharpnessInput.setText(str(sharpness))
         self.interpolator.set_kernel_sharpness(sharpness)
-        self.refresh()
+        self.window.render()
 
     def onKernelRadiusChange(self):
         if not self.interpolator: return
@@ -191,7 +188,7 @@ class DataViewToolBar(QtWidgets.QWidget):
         print('kernel radius: ', radius)
         self.kernelRadiusInput.setText(str(radius))
         self.interpolator.set_kernel_radius(radius)
-        self.refresh()
+        self.window.render()
 
     def onArrayCheckStateChanged(self, state, text):
         if state == QtCore.Qt.Checked:

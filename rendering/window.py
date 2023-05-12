@@ -44,6 +44,11 @@ class Window(QtWidgets.QMainWindow):
         self.toolbar = TypeExplorerToolBar(self, self.actors)
         self.set_view(config.CurrentView)
 
+    def open_file(self, filename):
+        self.actors.remove_actors()
+        self.actors.update_actors(filename)
+        self.render()
+
     def render(self):
         self.iren.Render()
 
@@ -58,21 +63,18 @@ class Window(QtWidgets.QMainWindow):
     def set_view(self, view):
         if config.CurrentView == view:
             return
+        self.toolbar.clear()
         if view == 'Type Explorer':
-            self.actors.remove_actors()
-            self.toolbar.clear()
-            self.actors = Actors(self)
             self.toolbar = TypeExplorerToolBar(self, self.actors)
         elif view == 'Data View':
-            self.actors.remove_actors()
-            self.toolbar.clear()
-            self.actors = Actors(self)
             self.toolbar = DataViewToolBar(self, self.actors)
         else:
             print("Unknown view: {}".format(view))
             exit(1)
 
         config.CurrentView = view
+        self.actors.remove_actors()
+        self.actors = Actors(self)
 
 def startWindow():
     app = QtWidgets.QApplication([])

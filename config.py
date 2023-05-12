@@ -23,6 +23,7 @@ CurrentView = 'Type Explorer'
 ArrayNameList = ['vx', 'vy', 'vz', 'mass', 'uu', 'hh', 'mu', 'rho', 'phi', 'id', 'mask']
 FilterList = ['dm', 'baryon', 'star', 'wind', 'gas', 'agn']
 NumPoints = 'None'
+THRESHOLD_PORT = 12
 CurrentFilters = []
 
 CoordMax = 64  # max x/y/z coordinate value

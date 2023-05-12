@@ -4,6 +4,7 @@ from vtkmodules.vtkCommonCore import vtkPoints, vtkDoubleArray
 from vtkmodules.util.numpy_support import vtk_to_numpy, numpy_to_vtk
 from vtkmodules.vtkFiltersCore import vtkThreshold
 from vtk import VTK_DOUBLE
+import vtk
 import numpy as np
 import config
 
@@ -22,6 +23,7 @@ def mask_points(polydata: vtkPolyData, array_name: str = None, particle_type: st
     mask_array = vtk_to_numpy(polydata.GetPointData().GetArray('mask')).astype(np.int32)
     data_array = None
     if array_name:
+        print("DATA ARRAYHAPPENING")
         data_array = vtk_to_numpy(polydata.GetPointData().GetArray(array_name))
     points_array = vtk_to_numpy(polydata.GetPoints().GetData())
 
@@ -71,15 +73,16 @@ def threshold_points(polydata: vtkPolyData, array_name: str, threshold_min: floa
     threshold_min: minimum value of the threshold
     threshold_max: maximum value of the threshold
     '''
-
+    print(threshold_min)
+    print(threshold_max)
     if threshold_min and threshold_max:
         config.ThresholdMin = threshold_min
         config.ThresholdMax = threshold_max
 
     threshold_filter = vtkThreshold()
     threshold_filter.SetInputData(polydata)
-    threshold_filter.SetInputArrayToProcess(0, 0, 0, vtkThreshold.POINTS, array_name)
+    #threshold_filter.SetInputArrayToProcess(0, 0, 0, vtk.vtkDataObject.FIELD_ASSOCIATION_POINTS, array_name)
     threshold_filter.ThresholdBetween(config.ThresholdMin, config.ThresholdMax)
 
-    return threshold_filter.GetOutputPort(0)
+    return threshold_filter.GetOutputPort(config.THRESHOLD_PORT)
 
