@@ -74,7 +74,7 @@ class Window(QtWidgets.QMainWindow):
 
         config.CurrentView = view
         self.actors.remove_actors()
-        self.actors = Actors(self)
+        self.actors.update_actors(config.File)
 
 def startWindow():
     app = QtWidgets.QApplication([])

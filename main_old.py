@@ -10,8 +10,6 @@ def main():
     reader.Update()
     config.File = filename
     config.ArrayName = 'phi'
-    polydata = reader.GetOutput()
-    print_meta_data(slice_polydata(polydata, 200))
 
     point_actor = getActor(config.ArrayName, filename)
     startWindow(point_actor)

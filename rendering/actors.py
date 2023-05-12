@@ -12,10 +12,9 @@ class Actors:
         self.parent = parent
         self.property_map = core.create_type_explorer_property_map()
         self.actors = {}
-        self.update_actors(helpers.get_program_parameters())
-        self.current_view = 'Type Explorer'
         self.mapper = vtkPointGaussianMapper()
         self.polydata = None
+        self.update_actors(helpers.get_program_parameters())
 
     def update_actors(self, filename):
         for actor in self.actors.values():
@@ -32,14 +31,11 @@ class Actors:
             type_polydata = core.split_particles(self.polydata)
             self.actors = {name: core.create_type_explorer_actor(data) for name, data in type_polydata.items()}
             for name, actor in self.actors.items():
-                core.update_view_property(actor, *self.property_map[name])
+                core.update_view_property_type_explorer(actor, *self.property_map[name])
         elif config.CurrentView == 'Data View':
-            self.actors = {name: core.create_data_view_actor(data) for name, data in type_polydata.items()}
+            self.actors = {"all": core.create_data_view_actor(self.polydata)}
         for actor in self.actors.values():
             self.parent.ren.AddActor(actor)
-
-
-
 
     def remove_actors(self):
         for actor in self.actors.values():

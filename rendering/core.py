@@ -7,7 +7,6 @@ def split_particles(polydata: vtk.vtkPolyData, pretty_print=False):
     type_names = ['agn', 'star', 'wind', 'gas', 'baryon', 'dm']
     type_polydata = {name: mask_points(polydata, particle_type=name, array_name=config.ArrayName) for name in type_names}
     assert sum([type_polydata[name].GetNumberOfPoints() for name in type_names]) == polydata.GetNumberOfPoints()
-
     if pretty_print:
         for name, data in type_polydata.items():
             num = data.GetNumberOfPoints()
@@ -60,11 +59,13 @@ def create_data_view_actor(polydata: vtk.vtkPolyData):
     actor.GetProperty().SetOpacity(0.2)
     return actor
 
-def update_view_property(actor: vtk.vtkActor, color: vtk.vtkColor3d, opacity: float, radius: float):
+def update_view_property_type_explorer(actor: vtk.vtkActor, color: vtk.vtkColor3d, opacity: float, radius: float):
     actor.GetProperty().SetColor(color)
     actor.GetProperty().SetOpacity(opacity)
     actor.GetMapper().SetScaleFactor(radius)
 
+def update_view_property_data_view(actor: vtk.vtkActor, color: vtk.vtkColor3d, opacity: float, radius: float):
+    actor.GetProperty().SetOpacity(0.2)
 
 def create_type_explorer_property_map() -> dict:
     colors = vtk.vtkNamedColors()
