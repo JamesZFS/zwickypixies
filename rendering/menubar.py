@@ -22,11 +22,10 @@ class MenuBar(QtWidgets.QWidget):
         type_explorer_view = QtWidgets.QAction('Type Explorer', self.window)
         type_explorer_view.triggered.connect(self.set_view_handler('Type Explorer'))
         view_menu.addAction(type_explorer_view)
-        """
         data_view = QtWidgets.QAction('Data View', self.window)
         data_view.triggered.connect(self.set_view_handler('Data View'))
         view_menu.addAction(data_view)
-        """
+
         menubar.addSeparator()
         # Animation control
         # TODO: Implement animation logics
