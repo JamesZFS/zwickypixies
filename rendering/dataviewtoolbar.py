@@ -1,6 +1,7 @@
 from PyQt5 import QtCore, QtWidgets
 import config
-from type_explorer import core
+from dataops.interpolator import Interpolator
+from helpers import create_legend
 
 class CustomGroupBox(QtWidgets.QGroupBox):
     def __init__(self, name, toolbox):
@@ -17,12 +18,16 @@ class CustomGroupBox(QtWidgets.QGroupBox):
             "5px; }")
         self.toggled.connect(self.on_toggled)
 
+    def init_checked(self):
+        for i in range(self.layout().count()):
+            self.layout().itemAt(i).widget().setVisible(self.isChecked())
+
     def on_toggled(self, checked):
         if checked:
-            self.toolbox.reactivate_actor(self.name, self.opacity)
+            self.toolbox.reactivate_actor(self.name)
             config.ShowFilter[self.name] = True
         else:
-            self.opacity = self.toolbox.deactivate_actor(self.name)
+            self.toolbox.deactivate_actor(self.name)
             config.ShowFilter[self.name] = False
 
 
@@ -50,8 +55,8 @@ class DataViewToolBar(QtWidgets.QWidget):
         self.toolbar.setFixedWidth(250)
         self.setContentsMargins(10, 10, 10, 10)
         self.toolbar.setStyleSheet("QToolBar { border: none; }")
-        self.interpolator = None
-        self.legend = None
+        self.interpolator = Interpolator(self.actors.polydata)
+        self.legend = create_legend(config.Lut)
         self.kernelSharpnessInput = None
         self.kernelRadiusInput = None
         self.initToolBar()
@@ -70,14 +75,17 @@ class DataViewToolBar(QtWidgets.QWidget):
         self.toolbar.addWidget(widget)
         self.toolbar.addSeparator()
 
-        #Add all filters
+        # Add all filters
         for name, _ in self.actors.property_map.items():
             groupBox = CustomGroupBox(name, self)
+            layout = QtWidgets.QFormLayout()
+            groupBox.setLayout(layout)
+            groupBox.init_checked()
             self.toolbar.addWidget(groupBox)
 
         self.toolbar.addSeparator()
 
-        # Move the "scan" plane with GUI
+        # Opacity control
         widget = QtWidgets.QWidget()
         layout = QtWidgets.QFormLayout(widget)
         label = QtWidgets.QLabel("Opacity:")
@@ -89,6 +97,7 @@ class DataViewToolBar(QtWidgets.QWidget):
         self.toolbar.addWidget(widget)
         self.toolbar.addSeparator()
 
+        # Z-axis scan plane
         widget = QtWidgets.QWidget()
         layout = QtWidgets.QFormLayout(widget)
         label = QtWidgets.QLabel("Scan Plane Z:")
@@ -136,8 +145,12 @@ class DataViewToolBar(QtWidgets.QWidget):
     def onArrayComboBoxChange(self, index):
         array_name = self.sender().currentText()
         assert array_name in config.ArrayNameList
+        if self.interpolator: self.window.ren.RemoveActor(self.interpolator.get_plane_actor())
+        self.interpolator = Interpolator(self.actors.polydata)
+        if self.legend: self.window.ren.RemoveActor(self.legend)
+        self.legend = create_legend(config.Lut)
         config.ArrayName = array_name
-        self.actors.update_actors(config.File)
+        self.actors.update_actors(config.File, keep_map=True)
         self.window.render()
 
     def recenter(self):
@@ -147,9 +160,10 @@ class DataViewToolBar(QtWidgets.QWidget):
         pass #TODO
 
     def onPointOpacitySliderChange(self, value):
-        if not self.currActor: return
-        alpha = value / 100
-        self.currActor.GetProperty().SetOpacity(alpha ** 2.4)
+        config.DataViewOpacity = (value / 100)**2.4
+        for name, _ in self.actors.property_map.items():
+            if config.ShowFilter[name]:
+                self.actors.actors[name].GetProperty().SetOpacity(config.DataViewOpacity)
         self.window.render()
 
     def onScanPlaneSliderChange(self, value):
@@ -193,3 +207,10 @@ class DataViewToolBar(QtWidgets.QWidget):
         self.toolbar.destroy()
         self.close()
 
+    def deactivate_actor(self, name):
+        self.actors.actors[name].GetProperty().SetOpacity(0)
+        self.window.render()
+
+    def reactivate_actor(self, name):
+        self.actors.actors[name].GetProperty().SetOpacity(config.DataViewOpacity)
+        self.window.render()

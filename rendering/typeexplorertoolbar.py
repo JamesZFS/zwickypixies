@@ -1,5 +1,5 @@
 from PyQt5 import QtCore, QtWidgets
-from type_explorer import core
+from rendering import core
 import config
 
 class CollapsibleGroupBox(QtWidgets.QGroupBox):
@@ -20,6 +20,7 @@ class CollapsibleGroupBox(QtWidgets.QGroupBox):
     def init_checked(self):
         for i in range(self.layout().count()):
             self.layout().itemAt(i).widget().setVisible(self.isChecked())
+
 
     def on_toggled(self, checked):
         if checked:
@@ -106,12 +107,13 @@ class TypeExplorerToolBar(QtWidgets.QWidget):
 
         self.window.addToolBar(QtCore.Qt.RightToolBarArea, self.toolbar)
         for name, _ in self.actors.property_map.items():
-            actor = self.actors.actors[name]
             color = self.actors.property_map[name][0]
             opacity = self.actors.property_map[name][1]
             radius = self.actors.property_map[name][2]
             self.actors.property_map[name] = (color, opacity, radius)
-            core.update_view_property(actor, color, opacity, radius)
+            self.actors.actors[name].GetProperty().SetColor(color)
+            self.actors.actors[name].GetProperty().SetOpacity(opacity)
+            self.actors.actors[name].GetMapper().SetScaleFactor(radius)
 
     def make_view_property_update_handler(self, name):
         return lambda: self.on_view_property_changed(name)
@@ -120,41 +122,44 @@ class TypeExplorerToolBar(QtWidgets.QWidget):
         return lambda: self.color_picker(name)
 
     def on_view_property_changed(self, name):
-        actor = self.actors.actors[name]
         color = self.actors.property_map[name][0]
         opacity = self.slider_value_to_property_value(self.opacity_sliders[name].value())
         radius = self.slider_value_to_property_value(self.radius_sliders[name].value())
         self.actors.property_map[name] = (color, opacity, radius)
-        core.update_view_property(actor, color, opacity, radius)
+        self.actors.actors[name].GetProperty().SetColor(color)
+        self.actors.actors[name].GetProperty().SetOpacity(opacity)
+        self.actors.actors[name].GetMapper().SetScaleFactor(radius)
         self.window.render()
 
     def deactivate_actor(self, name):
-        actor = self.actors.actors[name]
         color = self.actors.property_map[name][0]
         opacity = self.slider_value_to_property_value(self.opacity_sliders[name].value())
         radius = self.slider_value_to_property_value(self.radius_sliders[name].value())
-        self.actors.property_map[name] = (color, 0, radius)
-        core.update_view_property(actor, color, 0, radius)
+        self.actors.actors[name].GetProperty().SetColor(color)
+        self.actors.actors[name].GetProperty().SetOpacity(0)
+        self.actors.actors[name].GetMapper().SetScaleFactor(radius)
         self.window.render()
         return opacity
 
     def reactivate_actor(self, name, opacity):
-        actor = self.actors.actors[name]
         color = self.actors.property_map[name][0]
         radius = self.slider_value_to_property_value(self.radius_sliders[name].value())
         self.actors.property_map[name] = (color, opacity, radius)
-        core.update_view_property(actor, color, opacity, radius)
+        self.actors.actors[name].GetProperty().SetColor(color)
+        self.actors.actors[name].GetProperty().SetOpacity(opacity)
+        self.actors.actors[name].GetMapper().SetScaleFactor(radius)
         self.window.render()
 
     def on_reset_view_properties(self):
-        self.actors.property_map = core.create_default_property_map()
+        self.actors.property_map = core.create_type_explorer_property_map()
         for name, (color, opacity, radius) in self.actors.property_map.items():
             self.opacity_sliders[name].setValue(self.property_value_to_slider_value(opacity))
             self.radius_sliders[name].setValue(self.property_value_to_slider_value(radius))
             self.color_buttons[name].setStyleSheet(
                 f"background-color: rgb({color[0] * 255}, {color[1] * 255}, {color[2] * 255});")
-            actor = self.actors.actors[name]
-            core.update_view_property(actor, color, opacity, radius)
+            self.actors.actors[name].GetProperty().SetColor(color)
+            self.actors.actors[name].GetProperty().SetOpacity(opacity)
+            self.actors.actors[name].GetMapper().SetScaleFactor(radius)
         self.window.render()
 
     def slider_value_to_property_value(self, value: int) -> float:
@@ -184,7 +189,9 @@ class TypeExplorerToolBar(QtWidgets.QWidget):
             opacity = self.slider_value_to_property_value(self.opacity_sliders[name].value())
             radius = self.slider_value_to_property_value(self.radius_sliders[name].value())
             self.actors.property_map[name] = (new_color, opacity, radius)
-            core.update_view_property(actor, new_color, opacity, radius)
+            self.actors.actors[name].GetProperty().SetColor(color)
+            self.actors.actors[name].GetProperty().SetOpacity(opacity)
+            self.actors.actors[name].GetMapper().SetScaleFactor(radius)
             self.window.render()
 
     def clear(self):

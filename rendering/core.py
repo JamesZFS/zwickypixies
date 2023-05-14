@@ -33,14 +33,11 @@ def create_type_explorer_actor(polydata: vtk.vtkPolyData, color: vtk.vtkColor3d 
     return actor
 
 def create_data_view_actor(polydata: vtk.vtkPolyData, color: vtk.vtkColor3d = None, opacity: float = None, radius: float = None):
-    range = polydata.GetPointData().GetScalars().GetRange()
-    config.RangeMin = range[0]
-    config.RangeMax = range[1]
     #threshold_port = threshold_points(polydata, config.ArrayName, config.RangeMin, config.RangeMax)
     mapper = vtk.vtkPointGaussianMapper()
     #mapper.SetInputConnection(config.threshod_port, threshold_port)
     mapper.SetInputData(polydata)
-    mapper.SetScalarRange(range)
+    mapper.SetScalarRange([config.RangeMin, config.RangeMax])
     if radius is not None:
         mapper.SetScaleFactor(radius)
     mapper.EmissiveOff()
