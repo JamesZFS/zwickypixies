@@ -15,8 +15,6 @@ def split_particles(polydata: vtk.vtkPolyData, pretty_print=False):
     
     return type_polydata
 
-
-
 def create_type_explorer_actor(polydata: vtk.vtkPolyData, color: vtk.vtkColor3d = None, opacity: float = None, radius: float = None):
     mapper = vtk.vtkPointGaussianMapper()
     mapper.SetInputData(polydata)
