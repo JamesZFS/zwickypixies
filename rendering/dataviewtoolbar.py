@@ -2,33 +2,28 @@ from PyQt5 import QtCore, QtWidgets
 import config
 from type_explorer import core
 
-
-class CollapsibleGroupBox(QtWidgets.QGroupBox):
+class CustomGroupBox(QtWidgets.QGroupBox):
     def __init__(self, name, toolbox):
-        super(CollapsibleGroupBox, self).__init__()
+        super(CustomGroupBox, self).__init__()
         self.setStyleSheet("QGroupBox { border: none; }")
         self.setCheckable(True)
-        self.setChecked(True)
+        self.setChecked(config.ShowFilter[name])
         self.name = name
         self.toolbox = toolbox
         self.opacity = 0
-        self.setTitle(name)
+        self.setTitle(config.FilterListLongName[name])
         self.setStyleSheet(
             "QGroupBox { border: none; margin-top: 12px; } QGroupBox::title { subcontrol-origin: padding: 0px 5px 0px "
             "5px; }")
         self.toggled.connect(self.on_toggled)
 
     def on_toggled(self, checked):
-        print("{} -> {}".format(checked, ~checked))
         if checked:
-            print("deactivating {}".format(self.name))
-            self.layout().setContentsMargins(10, 10, 10, 10)
             self.toolbox.reactivate_actor(self.name, self.opacity)
-
+            config.ShowFilter[self.name] = True
         else:
-            print("reactivating {}".format(self.name))
-            self.layout().setContentsMargins(0, 0, 0, 0)
             self.opacity = self.toolbox.deactivate_actor(self.name)
+            config.ShowFilter[self.name] = False
 
 
         for i in range(self.layout().count()):
@@ -55,7 +50,6 @@ class DataViewToolBar(QtWidgets.QWidget):
         self.toolbar.setFixedWidth(250)
         self.setContentsMargins(10, 10, 10, 10)
         self.toolbar.setStyleSheet("QToolBar { border: none; }")
-        self.currActor = None
         self.interpolator = None
         self.legend = None
         self.kernelSharpnessInput = None
@@ -63,6 +57,7 @@ class DataViewToolBar(QtWidgets.QWidget):
         self.initToolBar()
 
     def initToolBar(self):
+        # Add metric component
         widget = QtWidgets.QWidget()
         layout = QtWidgets.QFormLayout(widget)
         label = QtWidgets.QLabel("Metric:")
@@ -75,37 +70,17 @@ class DataViewToolBar(QtWidgets.QWidget):
         self.toolbar.addWidget(widget)
         self.toolbar.addSeparator()
 
-        '''
-        widget = QtWidgets.QWidget()
-        layout = QtWidgets.QFormLayout(widget)
-        label = QtWidgets.QLabel("Filter:")
-        filterComboBox = QtWidgets.QComboBox()
-        filterComboBox.addItems(config.FilterList)
-        filterComboBox.setFixedWidth(100)
-        filterComboBox.currentIndexChanged.connect(self.onFilterComboBoxChange)
-        layout.addRow(label, filterComboBox)
-        toolbar.addWidget(widget)
-        toolbar.addSeparator()
-        '''
-        # Filtering
-        # TODO: Implement selection of arrays via this selection type
-        groupBox = QtWidgets.QGroupBox()
-        groupBox.setStyleSheet("QGroupBox { background-color: transparent; border: none; }")
-        layout = QtWidgets.QVBoxLayout()
-        entry_list = ["Dark Matter", "Baryon", "Stars", "Winds", "Gas", "AGN"]
-        for entry in entry_list:
-            checkBox = QtWidgets.QCheckBox(entry)
-            checkBox.stateChanged.connect(lambda state, text=entry: self.onArrayCheckStateChanged(state, text))
-            layout.addWidget(checkBox)
+        #Add all filters
+        for name, _ in self.actors.property_map.items():
+            groupBox = CustomGroupBox(name, self)
+            self.toolbar.addWidget(groupBox)
 
-        groupBox.setLayout(layout)
-        self.toolbar.addWidget(groupBox)
         self.toolbar.addSeparator()
 
         # Move the "scan" plane with GUI
         widget = QtWidgets.QWidget()
         layout = QtWidgets.QFormLayout(widget)
-        label = QtWidgets.QLabel("Point Opacity:")
+        label = QtWidgets.QLabel("Opacity:")
         pointOpacitySlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         pointOpacitySlider.setRange(0, 100)  # percentage
         pointOpacitySlider.setValue(50)
@@ -144,12 +119,29 @@ class DataViewToolBar(QtWidgets.QWidget):
         kernelRadiusInput.returnPressed.connect(self.onKernelRadiusChange)
         self.kernelRadiusInput = kernelRadiusInput
         layout.addRow(label, kernelRadiusInput)
-
         self.toolbar.addWidget(widget)
+
+        # Add reset camera button
+        recenter = QtWidgets.QPushButton('Recenter Scene', self.toolbar)
+        recenter.clicked.connect(self.recenter)
+        self.toolbar.addWidget(recenter)
+
         self.window.addToolBar(QtCore.Qt.RightToolBarArea, self.toolbar)
 
+
+
+    def make_view_property_update_handler(self, name):
+        return lambda: self.on_view_property_changed(name)
+
     def onArrayComboBoxChange(self, index):
-        pass #TODO
+        array_name = self.sender().currentText()
+        assert array_name in config.ArrayNameList
+        config.ArrayName = array_name
+        self.actors.update_actors(config.File)
+        self.window.render()
+
+    def recenter(self):
+        self.window.recenter()
 
     def onFilterComboBoxChange(self, index):
         pass #TODO

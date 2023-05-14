@@ -65,13 +65,14 @@ class Window(QtWidgets.QMainWindow):
             return
         self.toolbar.clear()
         if view == 'Type Explorer':
+            self.actors.property_map = self.actors.type_explorer_property_map
             self.toolbar = TypeExplorerToolBar(self, self.actors)
         elif view == 'Data View':
+            self.actors.property_map = self.actors.data_view_property_map
             self.toolbar = DataViewToolBar(self, self.actors)
         else:
             print("Unknown view: {}".format(view))
             exit(1)
-
         config.CurrentView = view
         self.actors.remove_actors()
         self.actors.update_actors(config.File)

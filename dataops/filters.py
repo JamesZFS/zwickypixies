@@ -16,10 +16,7 @@ def mask_points(polydata: vtkPolyData, array_name: str = None, particle_type: st
     array_name: name of the array to mask based on
     particle_type: particle type, e.g. 'dm' (for dark matter), 'baryon', 'star', 'wind', 'gas', 'agn'
     '''
-    print(array_name)
-    print(particle_type)
     if not particle_type or particle_type == 'None':
-        print("HERE")
         return polydata
 
     mask_array = vtk_to_numpy(polydata.GetPointData().GetArray('mask')).astype(np.int32)
@@ -50,7 +47,6 @@ def mask_points(polydata: vtkPolyData, array_name: str = None, particle_type: st
         particle_mask = is_agn
 
     if particle_mask is not None:
-        print("HERE")
         masked_points = points_array[particle_mask]
 
         vtk_masked_points = vtkPoints()
@@ -61,10 +57,8 @@ def mask_points(polydata: vtkPolyData, array_name: str = None, particle_type: st
         if array_name:
             masked_scalars = data_array[particle_mask]
             masked_polydata.GetPointData().SetScalars(numpy_to_vtk(masked_scalars, deep=True, array_type=VTK_DOUBLE))
-            print(masked_polydata.GetPointData().GetScalars())
         return masked_polydata
     else:
-        print("THERE")
         return polydata
 
 
@@ -85,8 +79,8 @@ def threshold_points(polydata: vtkPolyData, array_name: str, threshold_min: floa
 
     threshold_filter = vtkThreshold()
     threshold_filter.SetInputData(polydata)
-    #threshold_filter.SetInputArrayToProcess(0, 0, 0, vtk.vtkDataObject.FIELD_ASSOCIATION_POINTS, array_name)
+    threshold_filter.SetInputArrayToProcess(0, 0, 0, vtk.vtkDataObject.FIELD_ASSOCIATION_POINTS, array_name)
     threshold_filter.ThresholdBetween(config.ThresholdMin, config.ThresholdMax)
 
-    return threshold_filter.GetOutputPort(config.THRESHOLD_PORT)
+    return threshold_filter.GetOutputPort(config.threshod_port)
 

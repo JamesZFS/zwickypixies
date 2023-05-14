@@ -1,30 +1,35 @@
 from PyQt5 import QtCore, QtWidgets
 from type_explorer import core
-
+import config
 
 class CollapsibleGroupBox(QtWidgets.QGroupBox):
     def __init__(self, name, toolbox):
         super(CollapsibleGroupBox, self).__init__()
         self.setStyleSheet("QGroupBox { border: none; }")
         self.setCheckable(True)
-        self.setChecked(True)
+        self.setChecked(config.ShowFilter[name])
         self.name = name
         self.toolbox = toolbox
         self.opacity = 0
-        self.setTitle(name)
+        self.setTitle(config.FilterListLongName[name])
         self.setStyleSheet(
             "QGroupBox { border: none; margin-top: 12px; } QGroupBox::title { subcontrol-origin: padding: 0px 5px 0px "
             "5px; }")
         self.toggled.connect(self.on_toggled)
 
+    def init_checked(self):
+        for i in range(self.layout().count()):
+            self.layout().itemAt(i).widget().setVisible(self.isChecked())
+
     def on_toggled(self, checked):
         if checked:
             self.layout().setContentsMargins(10, 10, 10, 10)
             self.toolbox.reactivate_actor(self.name, self.opacity)
-
+            config.ShowFilter[self.name] = True
         else:
             self.layout().setContentsMargins(0, 0, 0, 0)
             self.opacity = self.toolbox.deactivate_actor(self.name)
+            config.ShowFilter[self.name] = False
 
 
         for i in range(self.layout().count()):
@@ -35,9 +40,6 @@ class CollapsibleGroupBox(QtWidgets.QGroupBox):
         line.setFrameShape(QtWidgets.QFrame.HLine)
         line.setFrameShadow(QtWidgets.QFrame.Sunken)
         self.layout().addWidget(line)
-
-    def set_opacity(self, opacity):
-        self.opacity = opacity
 
 
 class TypeExplorerToolBar(QtWidgets.QWidget):
@@ -87,6 +89,7 @@ class TypeExplorerToolBar(QtWidgets.QWidget):
 
             self.filter_box_groups[name] = groupBox
             groupBox.setLayout(layout)
+            groupBox.init_checked()
             self.toolbar.addWidget(groupBox)
             self.toolbar.addSeparator()
 
@@ -102,6 +105,13 @@ class TypeExplorerToolBar(QtWidgets.QWidget):
         self.toolbar.addWidget(recenter)
 
         self.window.addToolBar(QtCore.Qt.RightToolBarArea, self.toolbar)
+        for name, _ in self.actors.property_map.items():
+            actor = self.actors.actors[name]
+            color = self.actors.property_map[name][0]
+            opacity = self.actors.property_map[name][1]
+            radius = self.actors.property_map[name][2]
+            self.actors.property_map[name] = (color, opacity, radius)
+            core.update_view_property(actor, color, opacity, radius)
 
     def make_view_property_update_handler(self, name):
         return lambda: self.on_view_property_changed(name)

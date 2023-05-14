@@ -22,9 +22,11 @@ RangeMax = 'None'
 CurrentView = 'Type Explorer'
 ArrayNameList = ['vx', 'vy', 'vz', 'mass', 'uu', 'hh', 'mu', 'rho', 'phi', 'id', 'mask']
 FilterList = ['dm', 'baryon', 'star', 'wind', 'gas', 'agn']
+FilterListLongName = {'dm':'Dark Matter', 'baryon':'Baryon', 'star':'Star', 'wind':'Wind', 'gas':'Gas', 'agn':'Active Galactic Nuclei'}
 NumPoints = 'None'
-THRESHOLD_PORT = 12
+threshod_port = 0
 CurrentFilters = []
+ShowFilter = {'dm':True, 'baryon':True, 'star':True, 'wind':True, 'gas':True, 'agn':True}
 
 CoordMax = 64  # max x/y/z coordinate value
 CellRes = 50  # number of cells in each dimension during interpolation 
