@@ -41,12 +41,18 @@ class Window(QtWidgets.QMainWindow):
         self.menubar = MenuBar(self)
         self.bottombar = BottomBar(self)
         self.actors = Actors(self)
-        self.toolbar = TypeExplorerToolBar(self, self.actors)
+        self.toolbar = None
         self.set_view(config.CurrentView)
 
     def open_file(self, filename):
         self.actors.remove_actors()
-        self.actors.update_actors(filename)
+        self.actors.load_polytope(filename)
+        self.actors.update_actors()
+        if config.CurrentView == 'Type Explorer':
+            self.toolbar = TypeExplorerToolBar(self, self.actors)
+        elif config.CurrentView == 'Data View':
+            self.toolbar = DataViewToolBar(self, self.actors)
+        self.recenter()
         self.render()
 
     def render(self):
@@ -63,6 +69,9 @@ class Window(QtWidgets.QMainWindow):
     def set_view(self, view):
         if config.CurrentView == view:
             return
+        config.CurrentView = view
+        if not self.actors.polydata:
+            return
         self.toolbar.clear()
         if view == 'Type Explorer':
             self.toolbar = TypeExplorerToolBar(self, self.actors)
@@ -71,9 +80,9 @@ class Window(QtWidgets.QMainWindow):
         else:
             print("Unknown view: {}".format(view))
             exit(1)
-        config.CurrentView = view
+
         self.actors.remove_actors()
-        self.actors.update_actors(config.File)
+        self.actors.update_actors()
 
 def startWindow():
     app = QtWidgets.QApplication([])

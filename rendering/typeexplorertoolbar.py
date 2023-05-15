@@ -137,7 +137,7 @@ class TypeExplorerToolBar(QtWidgets.QWidget):
             self.color_buttons[name].setStyleSheet(
                 f"background-color: rgb({color[0] * 255}, {color[1] * 255}, {color[2] * 255});")
             self.filter_box_groups[name].setChecked(True)
-        self.actors.update_actors(config.File)
+        self.actors.update_actors()
         self.window.render()
 
     def slider_value_to_property_value(self, value: int) -> float:

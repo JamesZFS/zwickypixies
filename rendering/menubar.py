@@ -18,13 +18,13 @@ class MenuBar(QtWidgets.QWidget):
         exit_action = QtWidgets.QAction('Exit', self.window)
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
-        view_menu = menubar.addMenu('View')
+        self.view_menu = menubar.addMenu('View')
         type_explorer_view = QtWidgets.QAction('Type Explorer', self.window)
         type_explorer_view.triggered.connect(self.set_view_handler('Type Explorer'))
-        view_menu.addAction(type_explorer_view)
+        self.view_menu.addAction(type_explorer_view)
         data_view = QtWidgets.QAction('Data View', self.window)
         data_view.triggered.connect(self.set_view_handler('Data View'))
-        view_menu.addAction(data_view)
+        self.view_menu.addAction(data_view)
 
         menubar.addSeparator()
         # Animation control

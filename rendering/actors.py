@@ -2,7 +2,6 @@ from vtkmodules.vtkRenderingCore import vtkPointGaussianMapper
 
 import rendering.core as core
 import config
-import helpers
 import vtk
 
 
@@ -14,11 +13,8 @@ class Actors:
         self.actors = {}
         self.mapper = vtkPointGaussianMapper()
         self.polydata = None
-        self.update_actors(helpers.get_program_parameters())
 
-    def update_actors(self, filename):
-        for actor in self.actors.values():
-            self.parent.ren.RemoveActor(actor)
+    def load_polytope(self, filename):
         if config.File != filename:
             config.File = filename
             print(f'Reading {filename}...')
@@ -26,6 +22,9 @@ class Actors:
             reader.SetFileName(filename)
             reader.Update()
             self.polydata: vtk.vtkPolyData = reader.GetOutput()
+
+    def update_actors(self):
+        self.remove_actors()
         self.polydata.GetPointData().SetActiveScalars(config.ArrayName)
         range = self.polydata.GetPointData().GetScalars().GetRange()
         config.RangeMin = range[0]

@@ -152,7 +152,7 @@ class DataViewToolBar(QtWidgets.QWidget):
             self.window.ren.RemoveActor(self.legend)
         self.legend = create_legend(config.Lut)
         config.ArrayName = array_name
-        self.actors.update_actors(config.File)
+        self.actors.update_actors()
         self.window.render()
 
     def recenter(self):
