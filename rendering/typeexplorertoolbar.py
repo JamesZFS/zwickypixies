@@ -170,5 +170,6 @@ class TypeExplorerToolBar(QtWidgets.QWidget):
     def clear(self):
         self.toolbar.clear()
         self.toolbar.destroy()
+        self.toolbar.close()
         self.close()
 

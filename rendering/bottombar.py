@@ -44,7 +44,4 @@ class BottomBar:
 
     def updateBottomBarText(self):
         self.bottomBarFileLabel.setText(" File: " + config.File)
-        self.bottomBarArrayNameLabel.setText(
-            "| Current Array: ({})  Range: [{:.5f}, {:.5f}]".format(config.ArrayName, config.RangeMin, config.RangeMax))
-        self.bottomBarThresholdLabel.setText("| Threshold: [{}, {}]".format(config.ThresholdMin, config.ThresholdMax))
-        self.bottomBarFilterLabel.setText("| Filter: ({})".format(config.Filter))
+

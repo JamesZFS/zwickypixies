@@ -42,18 +42,20 @@ class Window(QtWidgets.QMainWindow):
         self.bottombar = BottomBar(self)
         self.actors = Actors(self)
         self.toolbar = None
-        self.set_view(config.CurrentView)
 
     def open_file(self, filename):
         self.actors.remove_actors()
         self.actors.load_polytope(filename)
         self.actors.update_actors()
+        if self.toolbar:
+            self.toolbar.clear()
         if config.CurrentView == 'Type Explorer':
             self.toolbar = TypeExplorerToolBar(self, self.actors)
         elif config.CurrentView == 'Data View':
             self.toolbar = DataViewToolBar(self, self.actors)
         self.recenter()
         self.render()
+        self.update_bottombar()
 
     def render(self):
         self.iren.Render()
@@ -83,6 +85,9 @@ class Window(QtWidgets.QMainWindow):
 
         self.actors.remove_actors()
         self.actors.update_actors()
+
+    def update_bottombar(self):
+        self.bottombar.updateBottomBarText()
 
 def startWindow():
     app = QtWidgets.QApplication([])

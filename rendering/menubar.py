@@ -1,6 +1,10 @@
 import os
+import re
 import sys
 from PyQt5 import QtWidgets, QtGui
+
+import config
+
 
 class MenuBar(QtWidgets.QWidget):
 
@@ -78,10 +82,27 @@ class MenuBar(QtWidgets.QWidget):
         print('Stopping animation...')
 
     def forwardAnimation(self):
-        print('Stopping animation...')
+        numbers = re.findall(r"\d+", config.File)
+        if numbers:
+            curr = numbers[0].zfill(3)
+            print(curr)
+            if int(curr) == 624:
+                return
+            number = str(int(curr) + 2).zfill(3)
+            filename = config.File.replace(curr, number)
+            self.window.open_file(filename)
+        else:
+            print("No number found in the string.")
 
     def backAnimation(self):
-        print('Stopping animation...')
-
+        numbers = re.findall(r"\d+", config.File)
+        if numbers:
+            curr = numbers[0].zfill(3)
+            print(curr)
+            if int(curr) == 0:
+                return
+            number = str(int(curr) - 2).zfill(3)
+            filename = config.File.replace(curr, number)
+            self.window.open_file(filename)
     def stopAnimation(self):
         print('Stopping animation...')

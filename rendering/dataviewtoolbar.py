@@ -1,4 +1,6 @@
 from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtGui import QIntValidator, QDoubleValidator
+
 import config
 from dataops.interpolator import Interpolator
 from helpers import create_legend
@@ -83,6 +85,18 @@ class DataViewToolBar(QtWidgets.QWidget):
             groupBox.init_checked()
             self.toolbar.addWidget(groupBox)
 
+        widget = QtWidgets.QWidget()
+        layout = QtWidgets.QVBoxLayout(widget)
+        label = QtWidgets.QLabel("Threshold:")
+        layout.addWidget(label)
+        min_thresh = QtWidgets.QLineEdit()
+        min_thresh.setValidator(QDoubleValidator())
+        layout.addWidget(min_thresh)
+        max_thresh = QtWidgets.QLineEdit()
+        max_thresh.setValidator(QDoubleValidator())
+        layout.addWidget(max_thresh)
+
+        self.toolbar.addWidget(widget)
         self.toolbar.addSeparator()
 
         # Opacity control
@@ -109,10 +123,7 @@ class DataViewToolBar(QtWidgets.QWidget):
         self.toolbar.addWidget(widget)
         self.toolbar.addSeparator()
 
-        # TODO two threshold inputboxes to select partial data
-
-        # TODO two range inputboxes for color map control
-
+        # Interpolator kernel controls
         widget = QtWidgets.QWidget()
         layout = QtWidgets.QFormLayout(widget)
         label = QtWidgets.QLabel("Kernel Sharpness:")
@@ -135,6 +146,7 @@ class DataViewToolBar(QtWidgets.QWidget):
         recenter.clicked.connect(self.recenter)
         self.toolbar.addWidget(recenter)
 
+        # Add toolbnar to window
         self.window.addToolBar(QtCore.Qt.RightToolBarArea, self.toolbar)
 
 
