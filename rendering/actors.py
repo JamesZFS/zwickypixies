@@ -45,6 +45,10 @@ class Actors:
         for actor in self.actors.values():
             self.parent.ren.RemoveActor(actor)
 
+    def add_actors(self):
+        for actor in self.actors.values():
+            self.parent.ren.AddActor(actor)
+
     def show_actor(self, name):
         if self.property_map[name][3]:
             return

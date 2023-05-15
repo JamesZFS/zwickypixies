@@ -67,7 +67,7 @@ class TypeExplorerToolBar(QtWidgets.QWidget):
             handler = self.make_view_property_update_handler(name)
 
             color_button = QtWidgets.QPushButton("")
-            color_button.clicked.connect(self.make_button_click_handler(name))
+            color_button.clicked.connect(self.make_color_picker_click_handler(name))
             color_button.setStyleSheet(f"background-color: rgb({color[0] * 255}, {color[1] * 255}, {color[2] * 255});")
             self.color_buttons[name] = color_button
             layout.addRow("Color:", color_button)
@@ -93,7 +93,6 @@ class TypeExplorerToolBar(QtWidgets.QWidget):
             self.toolbar.addWidget(groupBox)
             self.toolbar.addSeparator()
 
-
         # Add reset properties button
         reset_properties = QtWidgets.QPushButton('Reset View Properties', self.toolbar)
         reset_properties.clicked.connect(self.on_reset_view_properties)
@@ -104,12 +103,13 @@ class TypeExplorerToolBar(QtWidgets.QWidget):
         recenter.clicked.connect(self.recenter)
         self.toolbar.addWidget(recenter)
 
+        # Add toolbar to window
         self.window.addToolBar(QtCore.Qt.RightToolBarArea, self.toolbar)
 
     def make_view_property_update_handler(self, name):
         return lambda: self.on_view_property_changed(name)
 
-    def make_button_click_handler(self, name):
+    def make_color_picker_click_handler(self, name):
         return lambda: self.color_picker(name)
 
     def on_view_property_changed(self, name):
@@ -131,14 +131,13 @@ class TypeExplorerToolBar(QtWidgets.QWidget):
 
     def on_reset_view_properties(self):
         self.actors.property_map = core.create_property_map()
-        for name, (color, opacity, radius) in self.actors.property_map.items():
+        for name, (color, opacity, radius, show) in self.actors.property_map.items():
             self.opacity_sliders[name].setValue(self.property_value_to_slider_value(opacity))
             self.radius_sliders[name].setValue(self.property_value_to_slider_value(radius))
             self.color_buttons[name].setStyleSheet(
                 f"background-color: rgb({color[0] * 255}, {color[1] * 255}, {color[2] * 255});")
-            self.actors.actors[name].GetProperty().SetColor(color)
-            self.actors.actors[name].GetProperty().SetOpacity(opacity)
-            self.actors.actors[name].GetMapper().SetScaleFactor(radius)
+            self.filter_box_groups[name].setChecked(True)
+        self.actors.update_actors(config.File)
         self.window.render()
 
     def slider_value_to_property_value(self, value: int) -> float:
