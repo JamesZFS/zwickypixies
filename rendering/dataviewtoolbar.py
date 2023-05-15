@@ -145,12 +145,14 @@ class DataViewToolBar(QtWidgets.QWidget):
     def onArrayComboBoxChange(self, index):
         array_name = self.sender().currentText()
         assert array_name in config.ArrayNameList
-        if self.interpolator: self.window.ren.RemoveActor(self.interpolator.get_plane_actor())
+        if self.interpolator:
+            self.window.ren.RemoveActor(self.interpolator.get_plane_actor())
         self.interpolator = Interpolator(self.actors.polydata)
-        if self.legend: self.window.ren.RemoveActor(self.legend)
+        if self.legend:
+            self.window.ren.RemoveActor(self.legend)
         self.legend = create_legend(config.Lut)
         config.ArrayName = array_name
-        self.actors.update_actors(config.File, keep_map=True)
+        self.actors.update_actors(config.File)
         self.window.render()
 
     def recenter(self):
@@ -160,6 +162,8 @@ class DataViewToolBar(QtWidgets.QWidget):
         pass #TODO
 
     def onPointOpacitySliderChange(self, value):
+        if value == 100:
+            value -= 1e-5
         config.DataViewOpacity = (value / 100)**2.4
         for name, _ in self.actors.property_map.items():
             if config.ShowFilter[name]:
@@ -208,9 +212,9 @@ class DataViewToolBar(QtWidgets.QWidget):
         self.close()
 
     def deactivate_actor(self, name):
-        self.actors.actors[name].GetProperty().SetOpacity(0)
+        self.actors.hide_actor(name)
         self.window.render()
 
     def reactivate_actor(self, name):
-        self.actors.actors[name].GetProperty().SetOpacity(config.DataViewOpacity)
+        self.actors.show_actor(name)
         self.window.render()
