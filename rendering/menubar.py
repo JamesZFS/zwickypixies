@@ -1,6 +1,10 @@
 import os
+import re
 import sys
 from PyQt5 import QtWidgets, QtGui
+
+import config
+
 
 class MenuBar(QtWidgets.QWidget):
 
@@ -18,15 +22,14 @@ class MenuBar(QtWidgets.QWidget):
         exit_action = QtWidgets.QAction('Exit', self.window)
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
-        view_menu = menubar.addMenu('View')
+        self.view_menu = menubar.addMenu('View')
         type_explorer_view = QtWidgets.QAction('Type Explorer', self.window)
         type_explorer_view.triggered.connect(self.set_view_handler('Type Explorer'))
-        view_menu.addAction(type_explorer_view)
-        """
+        self.view_menu.addAction(type_explorer_view)
         data_view = QtWidgets.QAction('Data View', self.window)
         data_view.triggered.connect(self.set_view_handler('Data View'))
-        view_menu.addAction(data_view)
-        """
+        self.view_menu.addAction(data_view)
+
         menubar.addSeparator()
         # Animation control
         # TODO: Implement animation logics
@@ -79,10 +82,27 @@ class MenuBar(QtWidgets.QWidget):
         print('Stopping animation...')
 
     def forwardAnimation(self):
-        print('Stopping animation...')
+        numbers = re.findall(r"\d+", config.File)
+        if numbers:
+            curr = numbers[0].zfill(3)
+            print(curr)
+            if int(curr) == 624:
+                return
+            number = str(int(curr) + 2).zfill(3)
+            filename = config.File.replace(curr, number)
+            self.window.open_file(filename)
+        else:
+            print("No number found in the string.")
 
     def backAnimation(self):
-        print('Stopping animation...')
-
+        numbers = re.findall(r"\d+", config.File)
+        if numbers:
+            curr = numbers[0].zfill(3)
+            print(curr)
+            if int(curr) == 0:
+                return
+            number = str(int(curr) - 2).zfill(3)
+            filename = config.File.replace(curr, number)
+            self.window.open_file(filename)
     def stopAnimation(self):
         print('Stopping animation...')

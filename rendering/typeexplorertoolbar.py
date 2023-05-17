@@ -1,30 +1,35 @@
 from PyQt5 import QtCore, QtWidgets
-from type_explorer import core
-
+from rendering import core
+import config
 
 class CollapsibleGroupBox(QtWidgets.QGroupBox):
     def __init__(self, name, toolbox):
         super(CollapsibleGroupBox, self).__init__()
         self.setStyleSheet("QGroupBox { border: none; }")
         self.setCheckable(True)
-        self.setChecked(True)
+        self.setChecked(config.ShowFilter[name])
         self.name = name
         self.toolbox = toolbox
-        self.opacity = 0
-        self.setTitle(name)
+        self.setTitle(config.FilterListLongName[name])
         self.setStyleSheet(
             "QGroupBox { border: none; margin-top: 12px; } QGroupBox::title { subcontrol-origin: padding: 0px 5px 0px "
             "5px; }")
         self.toggled.connect(self.on_toggled)
 
+    def init_checked(self):
+        for i in range(self.layout().count()):
+            self.layout().itemAt(i).widget().setVisible(self.isChecked())
+
+
     def on_toggled(self, checked):
         if checked:
             self.layout().setContentsMargins(10, 10, 10, 10)
-            self.toolbox.reactivate_actor(self.name, self.opacity)
-
+            self.toolbox.reactivate_actor(self.name)
+            config.ShowFilter[self.name] = True
         else:
             self.layout().setContentsMargins(0, 0, 0, 0)
-            self.opacity = self.toolbox.deactivate_actor(self.name)
+            self.toolbox.deactivate_actor(self.name)
+            config.ShowFilter[self.name] = False
 
 
         for i in range(self.layout().count()):
@@ -35,9 +40,6 @@ class CollapsibleGroupBox(QtWidgets.QGroupBox):
         line.setFrameShape(QtWidgets.QFrame.HLine)
         line.setFrameShadow(QtWidgets.QFrame.Sunken)
         self.layout().addWidget(line)
-
-    def set_opacity(self, opacity):
-        self.opacity = opacity
 
 
 class TypeExplorerToolBar(QtWidgets.QWidget):
@@ -59,13 +61,13 @@ class TypeExplorerToolBar(QtWidgets.QWidget):
 
     def initToolBar(self):
         # Add all filters
-        for name, (color, opacity, radius) in self.actors.property_map.items():
+        for name, (color, opacity, radius, show) in self.actors.property_map.items():
             groupBox = CollapsibleGroupBox(name, self)
             layout = QtWidgets.QFormLayout()
             handler = self.make_view_property_update_handler(name)
 
             color_button = QtWidgets.QPushButton("")
-            color_button.clicked.connect(self.make_button_click_handler(name))
+            color_button.clicked.connect(self.make_color_picker_click_handler(name))
             color_button.setStyleSheet(f"background-color: rgb({color[0] * 255}, {color[1] * 255}, {color[2] * 255});")
             self.color_buttons[name] = color_button
             layout.addRow("Color:", color_button)
@@ -87,9 +89,9 @@ class TypeExplorerToolBar(QtWidgets.QWidget):
 
             self.filter_box_groups[name] = groupBox
             groupBox.setLayout(layout)
+            groupBox.init_checked()
             self.toolbar.addWidget(groupBox)
             self.toolbar.addSeparator()
-
 
         # Add reset properties button
         reset_properties = QtWidgets.QPushButton('Reset View Properties', self.toolbar)
@@ -101,50 +103,41 @@ class TypeExplorerToolBar(QtWidgets.QWidget):
         recenter.clicked.connect(self.recenter)
         self.toolbar.addWidget(recenter)
 
+        # Add toolbar to window
         self.window.addToolBar(QtCore.Qt.RightToolBarArea, self.toolbar)
 
     def make_view_property_update_handler(self, name):
         return lambda: self.on_view_property_changed(name)
 
-    def make_button_click_handler(self, name):
+    def make_color_picker_click_handler(self, name):
         return lambda: self.color_picker(name)
 
     def on_view_property_changed(self, name):
-        actor = self.actors.actors[name]
-        color = self.actors.property_map[name][0]
         opacity = self.slider_value_to_property_value(self.opacity_sliders[name].value())
         radius = self.slider_value_to_property_value(self.radius_sliders[name].value())
-        self.actors.property_map[name] = (color, opacity, radius)
-        core.update_view_property(actor, color, opacity, radius)
+        self.actors.edit_property_map(name, 1, opacity)
+        self.actors.edit_property_map(name, 2, opacity)
+        self.actors.actors[name].GetProperty().SetOpacity(opacity)
+        self.actors.actors[name].GetMapper().SetScaleFactor(radius)
         self.window.render()
 
     def deactivate_actor(self, name):
-        actor = self.actors.actors[name]
-        color = self.actors.property_map[name][0]
-        opacity = self.slider_value_to_property_value(self.opacity_sliders[name].value())
-        radius = self.slider_value_to_property_value(self.radius_sliders[name].value())
-        self.actors.property_map[name] = (color, 0, radius)
-        core.update_view_property(actor, color, 0, radius)
+        self.actors.hide_actor(name)
         self.window.render()
-        return opacity
 
-    def reactivate_actor(self, name, opacity):
-        actor = self.actors.actors[name]
-        color = self.actors.property_map[name][0]
-        radius = self.slider_value_to_property_value(self.radius_sliders[name].value())
-        self.actors.property_map[name] = (color, opacity, radius)
-        core.update_view_property(actor, color, opacity, radius)
+    def reactivate_actor(self, name):
+        self.actors.show_actor(name)
         self.window.render()
 
     def on_reset_view_properties(self):
-        self.actors.property_map = core.create_default_property_map()
-        for name, (color, opacity, radius) in self.actors.property_map.items():
+        self.actors.property_map = core.create_property_map()
+        for name, (color, opacity, radius, show) in self.actors.property_map.items():
             self.opacity_sliders[name].setValue(self.property_value_to_slider_value(opacity))
             self.radius_sliders[name].setValue(self.property_value_to_slider_value(radius))
             self.color_buttons[name].setStyleSheet(
                 f"background-color: rgb({color[0] * 255}, {color[1] * 255}, {color[2] * 255});")
-            actor = self.actors.actors[name]
-            core.update_view_property(actor, color, opacity, radius)
+            self.filter_box_groups[name].setChecked(True)
+        self.actors.update_actors()
         self.window.render()
 
     def slider_value_to_property_value(self, value: int) -> float:
@@ -163,22 +156,20 @@ class TypeExplorerToolBar(QtWidgets.QWidget):
 
     def color_picker(self, name):
         color = QtWidgets.QColorDialog.getColor()
-        if color.isValid():
-            actor = self.actors.actors[name]
-            r, g, b, _ = color.getRgb()
-            r = r / 255.0
-            g = g / 255.0
-            b = b / 255.0
-            new_color = [r, g, b]
-            self.color_buttons[name].setStyleSheet(f"background-color: rgb({new_color[0] * 255}, {new_color[1] * 255}, {new_color[2] * 255});")
-            opacity = self.slider_value_to_property_value(self.opacity_sliders[name].value())
-            radius = self.slider_value_to_property_value(self.radius_sliders[name].value())
-            self.actors.property_map[name] = (new_color, opacity, radius)
-            core.update_view_property(actor, new_color, opacity, radius)
-            self.window.render()
+        assert color.isValid()
+        r, g, b, _ = color.getRgb()
+        r = r / 255.0
+        g = g / 255.0
+        b = b / 255.0
+        new_color = [r, g, b]
+        self.color_buttons[name].setStyleSheet(f"background-color: rgb({new_color[0] * 255}, {new_color[1] * 255}, {new_color[2] * 255});")
+        self.actors.actors[name].GetProperty().SetColor(new_color)
+        self.actors.edit_property_map(name, 0, new_color)
+        self.window.render()
 
     def clear(self):
         self.toolbar.clear()
         self.toolbar.destroy()
+        self.toolbar.close()
         self.close()
 
