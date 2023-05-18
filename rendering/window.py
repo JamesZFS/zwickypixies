@@ -9,6 +9,7 @@ from rendering.bottombar import BottomBar
 from rendering.typeexplorertoolbar import TypeExplorerToolBar
 from rendering.dataviewtoolbar import DataViewToolBar
 from rendering.actors import Actors
+from rendering.volumeviewtoolbar import VolumeViewToolBar
 
 '''
     
@@ -73,6 +74,8 @@ class Window(QtWidgets.QMainWindow):
             self.toolbar = TypeExplorerToolBar(self, self.actors)
         elif config.CurrentView == 'Data View':
             self.toolbar = DataViewToolBar(self, self.actors)
+        elif config.CurrentView == 'Volume View':
+            self.toolbar = VolumeViewToolBar(self, self.actors)
         self.render()
         self.update_bottombar()
 
@@ -98,6 +101,8 @@ class Window(QtWidgets.QMainWindow):
             self.toolbar = TypeExplorerToolBar(self, self.actors)
         elif view == 'Data View':
             self.toolbar = DataViewToolBar(self, self.actors)
+        elif view == 'Volume View':
+            self.toolbar = VolumeViewToolBar(self, self.actors)
         else:
             print("Unknown view: {}".format(view))
             exit(1)

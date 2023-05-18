@@ -4,7 +4,10 @@ from vtkmodules.util.numpy_support import vtk_to_numpy, numpy_to_vtk
 from vtk import VTK_DOUBLE
 import vtk
 import numpy as np
+from vtkmodules.vtkFiltersGeometry import vtkGeometryFilter
+
 import config
+
 
 def mask_points(polydata: vtkPolyData, array_name: str = None, particle_type: str = None):
     '''
@@ -16,7 +19,7 @@ def mask_points(polydata: vtkPolyData, array_name: str = None, particle_type: st
     '''
     if not particle_type or particle_type == 'None':
         return polydata
-
+    test = vtkGeometryFilter()
     mask_array = vtk_to_numpy(polydata.GetPointData().GetArray('mask')).astype(np.int32)
     data_array = None
     if array_name:
