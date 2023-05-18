@@ -1,8 +1,6 @@
-from typing import List
 from vtkmodules.vtkCommonDataModel import vtkPolyData
-from vtkmodules.vtkCommonCore import vtkPoints, vtkDoubleArray
+from vtkmodules.vtkCommonCore import vtkPoints
 from vtkmodules.util.numpy_support import vtk_to_numpy, numpy_to_vtk
-from vtkmodules.vtkFiltersCore import vtkThreshold
 from vtk import VTK_DOUBLE
 import vtk
 import numpy as np
@@ -61,26 +59,21 @@ def mask_points(polydata: vtkPolyData, array_name: str = None, particle_type: st
     else:
         return polydata
 
-
-def threshold_points(polydata: vtkPolyData, array_name: str, threshold_min: float = None, threshold_max: float = None):
+def threshold_points(polydata: vtkPolyData):
     '''
-    Threshold points in the polydata based on the array_name
+    Threshold points in the polydata based on the current array_name in the configuration
 
     polydata: input polydata (point data)
-    array_name: name of the array to threshold
-    threshold_min: minimum value of the threshold
-    threshold_max: maximum value of the threshold
     '''
-    print(threshold_min)
-    print(threshold_max)
-    if threshold_min and threshold_max:
-        config.ThresholdMin = threshold_min
-        config.ThresholdMax = threshold_max
-
-    threshold_filter = vtkThreshold()
+    if config.ThresholdMin == None:
+        config.ThresholdMin = config.RangeMin
+    if config.ThresholdMax == None:
+        config.ThresholdMax = config.RangeMax
+    polydata.GetPointData().SetActiveScalars(config.ArrayName)
+    threshold_filter = vtk.vtkThresholdPoints()
     threshold_filter.SetInputData(polydata)
-    threshold_filter.SetInputArrayToProcess(0, 0, 0, vtk.vtkDataObject.FIELD_ASSOCIATION_POINTS, array_name)
     threshold_filter.ThresholdBetween(config.ThresholdMin, config.ThresholdMax)
-
-    return threshold_filter.GetOutputPort(config.threshod_port)
+    threshold_filter.SetInputArrayToProcess(0, 0, 0, vtk.vtkDataObject.FIELD_ASSOCIATION_POINTS, config.ArrayName)
+    threshold_filter.Update()
+    return threshold_filter.GetOutput()
 

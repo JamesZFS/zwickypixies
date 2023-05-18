@@ -4,6 +4,8 @@ import rendering.core as core
 import config
 import vtk
 
+from dataops.filters import threshold_points
+
 
 class Actors:
 
@@ -22,6 +24,11 @@ class Actors:
             reader.SetFileName(filename)
             reader.Update()
             self.polydata: vtk.vtkPolyData = reader.GetOutput()
+            config.ThresholdMin = None
+            config.ThresholdMax = None
+
+    def update_scalars(self):
+        self.polydata.GetPointData().SetActiveScalars(config.ArrayName)
 
     def update_actors(self):
         self.remove_actors()
@@ -29,12 +36,15 @@ class Actors:
         range = self.polydata.GetPointData().GetScalars().GetRange()
         config.RangeMin = range[0]
         config.RangeMax = range[1]
-        split_polydata = core.split_particles(self.polydata)
         if config.CurrentView == 'Type Explorer':
+            split_polydata = core.split_particles(self.polydata)
             self.actors = {name: core.create_type_explorer_actor(data) for name, data in split_polydata.items()}
             for name, actor in self.actors.items():
                 core.update_view_property(actor, *self.property_map[name])
         elif config.CurrentView == 'Data View':
+            pd = threshold_points(self.polydata)
+            self.parent.toolbar.set_thresh_text(config.ThresholdMin, config.ThresholdMax)
+            split_polydata = core.split_particles(pd)
             self.actors = {name: core.create_data_view_actor(data) for name, data in split_polydata.items()}
         for name, (color, opacity, radius, show) in self.property_map.items():
             if show:
