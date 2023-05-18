@@ -49,6 +49,8 @@ class TypeExplorerToolBar(QtWidgets.QWidget):
         self.actors = actors
         self.toolbar = QtWidgets.QToolBar(self.window)
         self.toolbar.setOrientation(QtCore.Qt.Vertical)
+        self.toolbar.toggleViewAction().setEnabled(False)
+        self.toolbar.toggleViewAction().setVisible(False)
         self.toolbar.setMovable(False)
         self.toolbar.setFixedWidth(250)
         self.setContentsMargins(10, 10, 10, 10)

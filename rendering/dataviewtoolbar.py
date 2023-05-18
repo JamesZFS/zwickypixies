@@ -53,6 +53,8 @@ class DataViewToolBar(QtWidgets.QWidget):
         self.actors = actors
         self.toolbar = QtWidgets.QToolBar(self.window)
         self.toolbar.setOrientation(QtCore.Qt.Vertical)
+        self.toolbar.toggleViewAction().setEnabled(False)
+        self.toolbar.toggleViewAction().setVisible(False)
         self.toolbar.setMovable(False)
         self.toolbar.setFixedWidth(250)
         self.setContentsMargins(10, 10, 10, 10)
@@ -85,6 +87,19 @@ class DataViewToolBar(QtWidgets.QWidget):
             groupBox.init_checked()
             self.toolbar.addWidget(groupBox)
 
+        # Opacity control
+        widget = QtWidgets.QWidget()
+        layout = QtWidgets.QFormLayout(widget)
+        label = QtWidgets.QLabel("Opacity:")
+        pointOpacitySlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        pointOpacitySlider.setRange(0, 100)  # percentage
+        pointOpacitySlider.setValue(50)
+        pointOpacitySlider.valueChanged.connect(self.onPointOpacitySliderChange)
+        layout.addRow(label, pointOpacitySlider)
+        self.toolbar.addWidget(widget)
+        self.toolbar.addSeparator()
+
+        # Add threshold control
         widget = QtWidgets.QWidget()
         layout = QtWidgets.QVBoxLayout(widget)
         label = QtWidgets.QLabel("Threshold:")
@@ -96,18 +111,6 @@ class DataViewToolBar(QtWidgets.QWidget):
         max_thresh.setValidator(QDoubleValidator())
         layout.addWidget(max_thresh)
 
-        self.toolbar.addWidget(widget)
-        self.toolbar.addSeparator()
-
-        # Opacity control
-        widget = QtWidgets.QWidget()
-        layout = QtWidgets.QFormLayout(widget)
-        label = QtWidgets.QLabel("Opacity:")
-        pointOpacitySlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        pointOpacitySlider.setRange(0, 100)  # percentage
-        pointOpacitySlider.setValue(50)
-        pointOpacitySlider.valueChanged.connect(self.onPointOpacitySliderChange)
-        layout.addRow(label, pointOpacitySlider)
         self.toolbar.addWidget(widget)
         self.toolbar.addSeparator()
 
@@ -146,13 +149,11 @@ class DataViewToolBar(QtWidgets.QWidget):
         recenter.clicked.connect(self.recenter)
         self.toolbar.addWidget(recenter)
 
-        # Add toolbnar to window
+        # Add toolbar to window
         self.window.addToolBar(QtCore.Qt.RightToolBarArea, self.toolbar)
+        self.window.ren.AddActor(self.interpolator.get_plane_actor())
+        self.window.ren.AddActor(self.legend)
 
-
-
-    def make_view_property_update_handler(self, name):
-        return lambda: self.on_view_property_changed(name)
 
     def onArrayComboBoxChange(self, index):
         array_name = self.sender().currentText()
@@ -160,18 +161,17 @@ class DataViewToolBar(QtWidgets.QWidget):
         if self.interpolator:
             self.window.ren.RemoveActor(self.interpolator.get_plane_actor())
         self.interpolator = Interpolator(self.actors.polydata)
+        self.window.ren.AddActor(self.interpolator.get_plane_actor())
         if self.legend:
             self.window.ren.RemoveActor(self.legend)
         self.legend = create_legend(config.Lut)
+        self.window.ren.AddActor(self.legend)
         config.ArrayName = array_name
         self.actors.update_actors()
         self.window.render()
 
     def recenter(self):
         self.window.recenter()
-
-    def onFilterComboBoxChange(self, index):
-        pass #TODO
 
     def onPointOpacitySliderChange(self, value):
         if value == 100:
@@ -212,13 +212,9 @@ class DataViewToolBar(QtWidgets.QWidget):
         self.interpolator.set_kernel_radius(radius)
         self.window.render()
 
-    def onArrayCheckStateChanged(self, state, text):
-        if state == QtCore.Qt.Checked:
-            print(f"{text} is checked")
-        else:
-            print(f"{text} is unchecked")
-
     def clear(self):
+        self.window.ren.RemoveActor(self.interpolator.get_plane_actor())
+        self.window.ren.RemoveActor(self.legend)
         self.toolbar.clear()
         self.toolbar.destroy()
         self.close()

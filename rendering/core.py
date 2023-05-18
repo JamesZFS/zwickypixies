@@ -20,7 +20,6 @@ def create_type_explorer_actor(polydata: vtk.vtkPolyData, color: vtk.vtkColor3d 
     mapper.SetInputData(polydata)
     mapper.ScalarVisibilityOff()
     mapper.EmissiveOff()
-    # mapper.SetSplatShaderCode(splat_shader_code)
     if radius is not None: mapper.SetScaleFactor(radius)
 
     actor = vtk.vtkActor()

@@ -1,3 +1,5 @@
+import re
+
 import vtk
 import config
 from PyQt5 import QtWidgets
@@ -38,22 +40,39 @@ class Window(QtWidgets.QMainWindow):
         self.setContentsMargins(0, 0, 0, 0)
         self.vl.setContentsMargins(0, 0, 0, 0)
 
+        self.actors = Actors(self)
         self.menubar = MenuBar(self)
         self.bottombar = BottomBar(self)
-        self.actors = Actors(self)
         self.toolbar = None
 
     def open_file(self, filename):
         self.actors.remove_actors()
         self.actors.load_polytope(filename)
         self.actors.update_actors()
+        numbers = re.findall(r"\d+", filename)
+        if numbers:
+            numbers = numbers[0].zfill(3)
+            if int(numbers) == 0:
+                self.menubar.back_action.setDisabled(True)
+            elif int(numbers) == 624:
+                self.menubar.forward_action.setDisabled(True)
+            else:
+                self.menubar.back_action.setEnabled(True)
+                self.menubar.forward_action.setEnabled(True)
+            self.menubar.timestep_input.setEnabled(True)
+            config.CurrentTime = numbers
+            self.menubar.timestep_input.setText(numbers)
+        else:
+            print("No number found in the string.")
+            exit(1)
         if self.toolbar:
             self.toolbar.clear()
+            del self.toolbar
+            self.toolbar = None
         if config.CurrentView == 'Type Explorer':
             self.toolbar = TypeExplorerToolBar(self, self.actors)
         elif config.CurrentView == 'Data View':
             self.toolbar = DataViewToolBar(self, self.actors)
-        self.recenter()
         self.render()
         self.update_bottombar()
 
