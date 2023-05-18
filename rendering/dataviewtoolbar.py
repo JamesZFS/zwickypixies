@@ -6,9 +6,9 @@ import config
 from dataops.interpolator import Interpolator
 from helpers import create_legend
 
-class CustomGroupBox(QtWidgets.QGroupBox):
+class CustomArrayBox(QtWidgets.QGroupBox):
     def __init__(self, name, toolbox):
-        super(CustomGroupBox, self).__init__()
+        super(CustomArrayBox, self).__init__()
         self.setStyleSheet("QGroupBox { border: none; }")
         self.setCheckable(True)
         self.setChecked(config.ShowFilter[name])
@@ -45,6 +45,36 @@ class CustomGroupBox(QtWidgets.QGroupBox):
         self.opacity = opacity
 
 
+class CollapsibleGroupBox(QtWidgets.QGroupBox):
+    def __init__(self, name, toolbox):
+        super(CollapsibleGroupBox, self).__init__()
+        self.setStyleSheet("QGroupBox { border: none; }")
+        self.setCheckable(True)
+        self.toolbox = toolbox
+        self.setChecked(self.toolbox.show_plane)
+        self.name = name
+        self.toolbox.interpolator.get_plane_actor().SetVisibility(toolbox.show_plane)
+        self.setTitle(name)
+        self.setStyleSheet(
+            "QGroupBox { border: none; margin-top: 12px; } QGroupBox::title { subcontrol-origin: padding: 0px 5px 0px "
+            "5px; }")
+        self.toggled.connect(self.on_toggled)
+
+    def init_checked(self):
+        for i in range(self.layout().count()):
+            self.layout().itemAt(i).widget().setVisible(self.isChecked())
+            self.layout().itemAt(i).widget().setEnabled(self.isChecked())
+
+    def on_toggled(self, checked):
+        if checked:
+            self.layout().setContentsMargins(10, 10, 10, 10)
+        else:
+            self.layout().setContentsMargins(0, 0, 0, 0)
+        for i in range(self.layout().count()):
+            self.layout().itemAt(i).widget().setVisible(checked)
+            self.layout().itemAt(i).widget().setEnabled(checked)
+        self.toolbox.toggle_plane(checked)
+
 class DataViewToolBar(QtWidgets.QWidget):
     def __init__(self, window, actors):
         super(DataViewToolBar, self).__init__()
@@ -64,6 +94,10 @@ class DataViewToolBar(QtWidgets.QWidget):
         self.kernelRadiusInput = None
         self.min_thresh = None
         self.max_thresh = None
+        self.scanPlaneSlider = None
+        self.scanPlaneAxis = 'z'
+        self.show_legend = True
+        self.show_plane = False
         self.initToolBar()
 
     def initToolBar(self):
@@ -81,26 +115,24 @@ class DataViewToolBar(QtWidgets.QWidget):
 
         # Add threshold control
         widget = QtWidgets.QWidget()
-        layout = QtWidgets.QVBoxLayout(widget)
-        label = QtWidgets.QLabel("Threshold:")
-        layout.addWidget(label)
         validator = QDoubleValidator()
         validator.setLocale(QLocale(QLocale.English, QLocale.UnitedStates))
+        layout = QtWidgets.QFormLayout(widget)
         self.min_thresh = QtWidgets.QLineEdit()
         self.min_thresh.setValidator(validator)
         self.min_thresh.returnPressed.connect(self.set_min_threshold)
-        layout.addWidget(self.min_thresh)
+        layout.addRow(QtWidgets.QLabel("Min:"), self.min_thresh)
         self.max_thresh = QtWidgets.QLineEdit()
         self.max_thresh.setValidator(validator)
         self.max_thresh.returnPressed.connect(self.set_max_threshold)
-        layout.addWidget(self.max_thresh)
+        layout.addRow(QtWidgets.QLabel("Max:"), self.max_thresh)
 
         self.toolbar.addWidget(widget)
         self.toolbar.addSeparator()
 
         # Add all filters
         for name, _ in self.actors.property_map.items():
-            groupBox = CustomGroupBox(name, self)
+            groupBox = CustomArrayBox(name, self)
             layout = QtWidgets.QFormLayout()
             groupBox.setLayout(layout)
             groupBox.init_checked()
@@ -116,22 +148,30 @@ class DataViewToolBar(QtWidgets.QWidget):
         pointOpacitySlider.valueChanged.connect(self.onPointOpacitySliderChange)
         layout.addRow(label, pointOpacitySlider)
         self.toolbar.addWidget(widget)
-
-        # Z-axis scan plane
-        widget = QtWidgets.QWidget()
-        layout = QtWidgets.QFormLayout(widget)
-        label = QtWidgets.QLabel("Scan Plane Z:")
-        scanPlaneSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        scanPlaneSlider.setRange(0, 100)
-        scanPlaneSlider.setValue(50)
-        scanPlaneSlider.valueChanged.connect(self.onScanPlaneSliderChange)
-        layout.addRow(label, scanPlaneSlider)
-        self.toolbar.addWidget(widget)
         self.toolbar.addSeparator()
 
-        # Interpolator kernel controls
-        widget = QtWidgets.QWidget()
-        layout = QtWidgets.QFormLayout(widget)
+        # Ass legend toggler
+        show_legend = QtWidgets.QCheckBox("Legend")
+        show_legend.setChecked(True)
+        show_legend.stateChanged.connect(self.toggle_legend)
+        self.toolbar.addWidget(show_legend)
+        self.toolbar.addSeparator()
+
+        # Scan plane
+        groupBox = CollapsibleGroupBox("Scan Plane", self)
+        layout = QtWidgets.QFormLayout()
+        groupBox.setLayout(layout)
+
+        axisComboBox = QtWidgets.QComboBox()
+        axisComboBox.addItems(["x-axis", "y-axis", "z-axis"])
+        axisComboBox.setCurrentIndex(2)
+        axisComboBox.currentIndexChanged.connect(self.set_plane_axis)
+        self.scanPlaneSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.scanPlaneSlider.setRange(0, 100)
+        self.scanPlaneSlider.setValue(50)
+        self.scanPlaneSlider.valueChanged.connect(self.onScanPlaneSliderChange)
+        layout.addRow(axisComboBox, self.scanPlaneSlider)
+
         label = QtWidgets.QLabel("Kernel Sharpness:")
         kernelSharpnessInput = QtWidgets.QLineEdit()
         kernelSharpnessInput.setText('10')
@@ -145,9 +185,9 @@ class DataViewToolBar(QtWidgets.QWidget):
         kernelRadiusInput.returnPressed.connect(self.onKernelRadiusChange)
         self.kernelRadiusInput = kernelRadiusInput
         layout.addRow(label, kernelRadiusInput)
-        self.toolbar.addWidget(widget)
+        groupBox.init_checked()
+        self.toolbar.addWidget(groupBox)
 
-        # Add reset camera button
         recenter = QtWidgets.QPushButton('Recenter Scene', self.toolbar)
         recenter.clicked.connect(self.recenter)
         self.toolbar.addWidget(recenter)
@@ -161,10 +201,6 @@ class DataViewToolBar(QtWidgets.QWidget):
     def onArrayComboBoxChange(self, index):
         array_name = self.sender().currentText()
         assert array_name in config.ArrayNameList
-        if self.interpolator:
-            self.window.ren.RemoveActor(self.interpolator.get_plane_actor())
-        self.interpolator = Interpolator(self.actors.polydata)
-        self.window.ren.AddActor(self.interpolator.get_plane_actor())
         if self.legend:
             self.window.ren.RemoveActor(self.legend)
         self.legend = create_legend(config.Lut)
@@ -173,6 +209,10 @@ class DataViewToolBar(QtWidgets.QWidget):
         config.ThresholdMax = None
         config.ArrayName = array_name
         self.actors.update_actors()
+        if self.interpolator:
+            self.window.ren.RemoveActor(self.interpolator.get_plane_actor())
+        self.interpolator = Interpolator(self.actors.polydata)
+        self.window.ren.AddActor(self.interpolator.get_plane_actor())
         self.window.render()
 
     def recenter(self):
@@ -182,11 +222,13 @@ class DataViewToolBar(QtWidgets.QWidget):
         min_thresh = self.min_thresh.text()
         config.ThresholdMin = float(min_thresh)
         self.actors.update_actors()
+        self.window.render()
 
     def set_max_threshold(self):
         max_thresh = self.max_thresh.text()
         config.ThresholdMax = float(max_thresh)
         self.actors.update_actors()
+        self.window.render()
 
     def onPointOpacitySliderChange(self, value):
         if value == 100:
@@ -200,7 +242,7 @@ class DataViewToolBar(QtWidgets.QWidget):
     def onScanPlaneSliderChange(self, value):
         if not self.interpolator: return
         alpha = value / 100
-        self.interpolator.set_plane_z(alpha * config.CoordMax)
+        self.interpolator.set_plane(self.scanPlaneAxis, alpha * config.CoordMax)
         self.window.render()
 
     def onKernelSharpnessChange(self):
@@ -245,3 +287,21 @@ class DataViewToolBar(QtWidgets.QWidget):
     def set_thresh_text(self, min_thresh, max_thresh):
         self.min_thresh.setText(str(min_thresh))
         self.max_thresh.setText(str(max_thresh))
+
+    def toggle_legend(self, state):
+        if state == QtCore.Qt.Checked:
+            self.legend.VisibilityOn()
+        else:
+            self.legend.VisibilityOff()
+        self.window.render()
+
+    def toggle_plane(self, state):
+        self.interpolator.get_plane_actor().SetVisibility(state)
+        self.window.render()
+
+    def set_plane_axis(self, index):
+        self.scanPlaneAxis = ['x','y','z'][index]
+        value = self.scanPlaneSlider.value()
+        alpha = value / 100
+        self.interpolator.set_plane(self.scanPlaneAxis, alpha * config.CoordMax)
+        self.window.render()
