@@ -60,6 +60,7 @@ class MenuBar(QtWidgets.QWidget):
         self.animation_bar.setFixedHeight(25)
         self.animation_bar.toggleViewAction().setEnabled(False)
         self.animation_bar.toggleViewAction().setVisible(False)
+        self.animation_bar.setVisible(False)
         self.animation_bar.setMovable(False)
         self.animation_bar.setStyleSheet("""
             QToolButton:hover {

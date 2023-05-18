@@ -15,10 +15,10 @@ global Lut
 File = 'None'
 ArrayName = 'phi'
 Filter = 'None'
-ThresholdMin = 'None'
-ThresholdMax = 'None'
-RangeMin = 'None'
-RangeMax = 'None'
+ThresholdMin = None
+ThresholdMax = None
+RangeMin = None
+RangeMax = None
 CurrentTime = "-1"
 CurrentView = 'Type Explorer'
 ArrayNameList = ['vx', 'vy', 'vz', 'mass', 'uu', 'hh', 'mu', 'rho', 'phi', 'id', 'mask']

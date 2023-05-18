@@ -1,5 +1,6 @@
 from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtGui import QIntValidator, QDoubleValidator
+from PyQt5.QtCore import QLocale
+from PyQt5.QtGui import QDoubleValidator
 
 import config
 from dataops.interpolator import Interpolator
@@ -31,8 +32,6 @@ class CustomGroupBox(QtWidgets.QGroupBox):
         else:
             self.toolbox.deactivate_actor(self.name)
             config.ShowFilter[self.name] = False
-
-
         for i in range(self.layout().count()):
             self.layout().itemAt(i).widget().setVisible(checked)
 
@@ -63,6 +62,8 @@ class DataViewToolBar(QtWidgets.QWidget):
         self.legend = create_legend(config.Lut)
         self.kernelSharpnessInput = None
         self.kernelRadiusInput = None
+        self.min_thresh = None
+        self.max_thresh = None
         self.initToolBar()
 
     def initToolBar(self):
@@ -76,6 +77,24 @@ class DataViewToolBar(QtWidgets.QWidget):
         arrayComboBox.setFixedWidth(100)
         arrayComboBox.currentIndexChanged.connect(self.onArrayComboBoxChange)
         layout.addRow(label, arrayComboBox)
+        self.toolbar.addWidget(widget)
+
+        # Add threshold control
+        widget = QtWidgets.QWidget()
+        layout = QtWidgets.QVBoxLayout(widget)
+        label = QtWidgets.QLabel("Threshold:")
+        layout.addWidget(label)
+        validator = QDoubleValidator()
+        validator.setLocale(QLocale(QLocale.English, QLocale.UnitedStates))
+        self.min_thresh = QtWidgets.QLineEdit()
+        self.min_thresh.setValidator(validator)
+        self.min_thresh.returnPressed.connect(self.set_min_threshold)
+        layout.addWidget(self.min_thresh)
+        self.max_thresh = QtWidgets.QLineEdit()
+        self.max_thresh.setValidator(validator)
+        self.max_thresh.returnPressed.connect(self.set_max_threshold)
+        layout.addWidget(self.max_thresh)
+
         self.toolbar.addWidget(widget)
         self.toolbar.addSeparator()
 
@@ -92,34 +111,18 @@ class DataViewToolBar(QtWidgets.QWidget):
         layout = QtWidgets.QFormLayout(widget)
         label = QtWidgets.QLabel("Opacity:")
         pointOpacitySlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        pointOpacitySlider.setRange(0, 100)  # percentage
+        pointOpacitySlider.setRange(0, 100)
         pointOpacitySlider.setValue(50)
         pointOpacitySlider.valueChanged.connect(self.onPointOpacitySliderChange)
         layout.addRow(label, pointOpacitySlider)
         self.toolbar.addWidget(widget)
-        self.toolbar.addSeparator()
-
-        # Add threshold control
-        widget = QtWidgets.QWidget()
-        layout = QtWidgets.QVBoxLayout(widget)
-        label = QtWidgets.QLabel("Threshold:")
-        layout.addWidget(label)
-        min_thresh = QtWidgets.QLineEdit()
-        min_thresh.setValidator(QDoubleValidator())
-        layout.addWidget(min_thresh)
-        max_thresh = QtWidgets.QLineEdit()
-        max_thresh.setValidator(QDoubleValidator())
-        layout.addWidget(max_thresh)
-
-        self.toolbar.addWidget(widget)
-        self.toolbar.addSeparator()
 
         # Z-axis scan plane
         widget = QtWidgets.QWidget()
         layout = QtWidgets.QFormLayout(widget)
         label = QtWidgets.QLabel("Scan Plane Z:")
         scanPlaneSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        scanPlaneSlider.setRange(0, 100)  # percentage
+        scanPlaneSlider.setRange(0, 100)
         scanPlaneSlider.setValue(50)
         scanPlaneSlider.valueChanged.connect(self.onScanPlaneSliderChange)
         layout.addRow(label, scanPlaneSlider)
@@ -166,12 +169,24 @@ class DataViewToolBar(QtWidgets.QWidget):
             self.window.ren.RemoveActor(self.legend)
         self.legend = create_legend(config.Lut)
         self.window.ren.AddActor(self.legend)
+        config.ThresholdMin = None
+        config.ThresholdMax = None
         config.ArrayName = array_name
         self.actors.update_actors()
         self.window.render()
 
     def recenter(self):
         self.window.recenter()
+
+    def set_min_threshold(self):
+        min_thresh = self.min_thresh.text()
+        config.ThresholdMin = float(min_thresh)
+        self.actors.update_actors()
+
+    def set_max_threshold(self):
+        max_thresh = self.max_thresh.text()
+        config.ThresholdMax = float(max_thresh)
+        self.actors.update_actors()
 
     def onPointOpacitySliderChange(self, value):
         if value == 100:
@@ -226,3 +241,7 @@ class DataViewToolBar(QtWidgets.QWidget):
     def reactivate_actor(self, name):
         self.actors.show_actor(name)
         self.window.render()
+
+    def set_thresh_text(self, min_thresh, max_thresh):
+        self.min_thresh.setText(str(min_thresh))
+        self.max_thresh.setText(str(max_thresh))

@@ -1,7 +1,7 @@
 import vtk
 import helpers
 import config
-from dataops.filters import mask_points, threshold_points
+from dataops.filters import mask_points
 
 def split_particles(polydata: vtk.vtkPolyData, pretty_print=False):
     type_names = ['agn', 'star', 'wind', 'gas', 'baryon', 'dm']
@@ -30,9 +30,7 @@ def create_type_explorer_actor(polydata: vtk.vtkPolyData, color: vtk.vtkColor3d 
     return actor
 
 def create_data_view_actor(polydata: vtk.vtkPolyData, color: vtk.vtkColor3d = None, opacity: float = None, radius: float = None, show=None):
-    #threshold_port = threshold_points(polydata, config.ArrayName, config.RangeMin, config.RangeMax)
     mapper = vtk.vtkPointGaussianMapper()
-    #mapper.SetInputConnection(config.threshod_port, threshold_port)
     mapper.SetInputData(polydata)
     mapper.SetScalarRange([config.RangeMin, config.RangeMax])
     mapper.SetScaleFactor(0.2)
