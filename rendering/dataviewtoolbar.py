@@ -51,9 +51,9 @@ class CollapsibleGroupBox(QtWidgets.QGroupBox):
         self.setStyleSheet("QGroupBox { border: none; }")
         self.setCheckable(True)
         self.toolbox = toolbox
-        self.setChecked(self.toolbox.show_plane)
+        self.setChecked(config.ShowScanPlane)
         self.name = name
-        self.toolbox.interpolator.get_plane_actor().SetVisibility(toolbox.show_plane)
+        self.toolbox.interpolator.get_plane_actor().SetVisibility(config.ShowScanPlane)
         self.setTitle(name)
         self.setStyleSheet(
             "QGroupBox { border: none; margin-top: 12px; } QGroupBox::title { subcontrol-origin: padding: 0px 5px 0px "
@@ -62,8 +62,8 @@ class CollapsibleGroupBox(QtWidgets.QGroupBox):
 
     def init_checked(self):
         for i in range(self.layout().count()):
-            self.layout().itemAt(i).widget().setVisible(self.isChecked())
-            self.layout().itemAt(i).widget().setEnabled(self.isChecked())
+            self.layout().itemAt(i).widget().setVisible(config.ShowScanPlane)
+            self.layout().itemAt(i).widget().setEnabled(config.ShowScanPlane)
 
     def on_toggled(self, checked):
         if checked:
@@ -73,6 +73,7 @@ class CollapsibleGroupBox(QtWidgets.QGroupBox):
         for i in range(self.layout().count()):
             self.layout().itemAt(i).widget().setVisible(checked)
             self.layout().itemAt(i).widget().setEnabled(checked)
+        config.ShowLegend = checked
         self.toolbox.toggle_plane(checked)
 
 class DataViewToolBar(QtWidgets.QWidget):
@@ -152,7 +153,7 @@ class DataViewToolBar(QtWidgets.QWidget):
 
         # Ass legend toggler
         show_legend = QtWidgets.QCheckBox("Legend")
-        show_legend.setChecked(True)
+        show_legend.setChecked(config.ShowLegend)
         show_legend.stateChanged.connect(self.toggle_legend)
         self.toolbar.addWidget(show_legend)
         self.toolbar.addSeparator()
@@ -196,6 +197,14 @@ class DataViewToolBar(QtWidgets.QWidget):
         self.window.addToolBar(QtCore.Qt.RightToolBarArea, self.toolbar)
         self.window.ren.AddActor(self.interpolator.get_plane_actor())
         self.window.ren.AddActor(self.legend)
+        thmin = config.RangeMin
+        thmax = config.RangeMax
+        if config.ThresholdMin is not None:
+            thmin = config.ThresholdMin
+        if config.ThresholdMax is not None:
+            thmax = config.ThresholdMax
+        self.set_thresh_text(thmin, thmax)
+
 
 
     def onArrayComboBoxChange(self, index):
@@ -205,8 +214,10 @@ class DataViewToolBar(QtWidgets.QWidget):
             self.window.ren.RemoveActor(self.legend)
         self.legend = create_legend(config.Lut)
         self.window.ren.AddActor(self.legend)
-        config.ThresholdMin = None
-        config.ThresholdMax = None
+        if config.ThresholdMin is not None:
+            config.ThresholdMin = None
+        if config.ThresholdMax is not None:
+            config.ThresholdMax = None
         config.ArrayName = array_name
         self.actors.update_actors()
         if self.interpolator:
@@ -293,6 +304,7 @@ class DataViewToolBar(QtWidgets.QWidget):
             self.legend.VisibilityOn()
         else:
             self.legend.VisibilityOff()
+        config.ShowLegend = state
         self.window.render()
 
     def toggle_plane(self, state):

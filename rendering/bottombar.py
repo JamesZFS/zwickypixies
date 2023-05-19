@@ -6,7 +6,7 @@ class BottomBar:
         self.parent = parent
         self.bottombar = None
         self.bottomBarFileLabel = None
-        self.bottomBarArrayNameLabel = None
+        self.bottomBarProgressLabel = None
         self.bottomBarThresholdLabel = None
         self.bottomBarFilterLabel = None
         self.initBottomBar()
@@ -25,10 +25,10 @@ class BottomBar:
         self.bottomBarFileLabel.setMinimumSize(self.bottomBarFileLabel.sizeHint())
         bottomBarLayout.addWidget(self.bottomBarFileLabel)
 
-        self.bottomBarArrayNameLabel = QtWidgets.QLabel(self.bottombar)
-        self.bottomBarArrayNameLabel.setContentsMargins(0, 0, 0, 0)
-        self.bottomBarArrayNameLabel.setMinimumSize(self.bottomBarArrayNameLabel.sizeHint())
-        bottomBarLayout.addWidget(self.bottomBarArrayNameLabel)
+        self.bottomBarProgressLabel = QtWidgets.QLabel(self.bottombar)
+        self.bottomBarProgressLabel.setContentsMargins(0, 0, 0, 0)
+        self.bottomBarProgressLabel.setMinimumSize(self.bottomBarProgressLabel.sizeHint())
+        bottomBarLayout.addWidget(self.bottomBarProgressLabel)
 
         self.bottomBarThresholdLabel = QtWidgets.QLabel(self.bottombar)
         self.bottomBarThresholdLabel.setContentsMargins(0, 0, 0, 0)
@@ -45,4 +45,22 @@ class BottomBar:
 
     def updateBottomBarText(self):
         self.bottomBarFileLabel.setText(" File: " + config.File)
+
+    def updateBottomBarProgress(self, current):
+        percent = 100/624*current
+        self.bottomBarProgressLabel.setText("Rendering: [{}] {}%".format(self.getloadingbar(percent), int(percent)))
+
+    def clearBottomBarProgress(self):
+        self.bottomBarProgressLabel.setText("")
+
+    def getloadingbar(self, percent):
+        barlen = 40
+        num = int(barlen / 100 * percent)
+        arr = []
+        for i in range(num):
+            arr.append("#")
+        for i in range(num, barlen):
+            arr.append(" ")
+        return ''.join(arr)
+
 

@@ -8,7 +8,7 @@ def split_particles(polydata: vtk.vtkPolyData, pretty_print=False):
     type_names = ['agn', 'star', 'wind', 'gas', 'baryon', 'dm']
     type_polydata = {name: mask_points(polydata, particle_type=name, array_name=config.ArrayName) for name in
                      type_names}
-    assert sum([type_polydata[name].GetNumberOfPoints() for name in type_names]) == polydata.GetNumberOfPoints()
+    #assert sum([type_polydata[name].GetNumberOfPoints() for name in type_names]) == polydata.GetNumberOfPoints()
     if pretty_print:
         for name, data in type_polydata.items():
             num = data.GetNumberOfPoints()

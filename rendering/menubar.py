@@ -4,6 +4,7 @@ import sys
 from PyQt5 import QtWidgets, QtGui, QtCore
 
 import config
+from rendering.export.export import Exporter
 
 
 class IntInputAction(QtWidgets.QWidgetAction):
@@ -27,20 +28,24 @@ class MenuBar(QtWidgets.QWidget):
         self.forward_action = None
         self.animation_bar = None
         self.timestep_input = None
+        self.menubar = None
         self.initMenuBar()
 
 
     def initMenuBar(self):
         # Define menubar entries
-        menubar = self.window.menuBar()
-        file_menu = menubar.addMenu('File')
+        self.menubar = self.window.menuBar()
+        file_menu = self.menubar.addMenu('File')
         open_action = QtWidgets.QAction('Open', self.window)
         open_action.triggered.connect(self.openFile)
         file_menu.addAction(open_action)
+        export_action = QtWidgets.QAction('Export', self.window)
+        export_action.triggered.connect(self.export)
+        file_menu.addAction(export_action)
         exit_action = QtWidgets.QAction('Exit', self.window)
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
-        self.view_menu = menubar.addMenu('View')
+        self.view_menu = self.menubar.addMenu('View')
         type_explorer_view = QtWidgets.QAction('Type Explorer', self.window)
         type_explorer_view.triggered.connect(self.set_view_handler('Type Explorer'))
         self.view_menu.addAction(type_explorer_view)
@@ -50,7 +55,7 @@ class MenuBar(QtWidgets.QWidget):
         volume_view = QtWidgets.QAction('Volume View', self.window)
         volume_view.triggered.connect(self.set_view_handler('Volume View'))
         self.view_menu.addAction(volume_view)
-        show_menu = menubar.addMenu('Show')
+        show_menu = self.menubar.addMenu('Show')
         show_anim_ctrl = QtWidgets.QAction('Animation Controls', self.window)
         show_anim_ctrl.triggered.connect(self.toggle_animation_controls)
         show_menu.addAction(show_anim_ctrl)
@@ -222,3 +227,8 @@ class MenuBar(QtWidgets.QWidget):
             self.timestep_input.clearFocus()
             self.timestep_input.setText(config.CurrentTime)
             return
+
+    def export(self):
+        if not self.window.actors.polydata:
+            return
+        exporter = Exporter(self.window)
