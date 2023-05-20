@@ -4,6 +4,7 @@ from PyQt5.QtGui import QDoubleValidator
 
 import config
 from dataops.interpolator import Interpolator
+from dataops.glyph import Glyph
 from helpers import create_legend
 
 class CustomArrayBox(QtWidgets.QGroupBox):
@@ -76,11 +77,38 @@ class CollapsibleGroupBox(QtWidgets.QGroupBox):
         config.ShowLegend = checked
         self.toolbox.toggle_plane(checked)
 
+
+def slider_to_glyph_scale(value):
+    return value / 100 * 3.0 + 0.01  # 0.01 to 3.0
+
+
+def glyph_scale_to_slider(scale):
+    return int((scale - 0.01) / 3.0 * 100)
+
+
+def glyph_opaticy_to_slider(opacity):
+    return int(opacity ** (1 / 2.4) * 100)
+
+
+def slider_to_glyph_opacity(value):
+    return (value / 100) ** 2.4
+
+
+def glyph_density_to_slider(density):
+    return int(density ** (1/5) * 100)
+
+
+def slider_to_glyph_density(value):
+    return (value / 100) ** 5
+
+
 class DataViewToolBar(QtWidgets.QWidget):
     def __init__(self, window, actors):
+        from rendering.window import Window
+        from rendering.actors import Actors
         super(DataViewToolBar, self).__init__()
-        self.window = window
-        self.actors = actors
+        self.window: Window = window
+        self.actors: Actors = actors
         self.toolbar = QtWidgets.QToolBar(self.window)
         self.toolbar.setOrientation(QtCore.Qt.Vertical)
         self.toolbar.toggleViewAction().setEnabled(False)
@@ -90,6 +118,7 @@ class DataViewToolBar(QtWidgets.QWidget):
         self.setContentsMargins(10, 10, 10, 10)
         self.toolbar.setStyleSheet("QToolBar { border: none; }")
         self.interpolator = Interpolator(self.actors.polydata)
+        self.glyph = Glyph(self.actors.polydata)
         self.legend = create_legend(config.Lut)
         self.kernelSharpnessInput = None
         self.kernelRadiusInput = None
@@ -189,6 +218,51 @@ class DataViewToolBar(QtWidgets.QWidget):
         groupBox.init_checked()
         self.toolbar.addWidget(groupBox)
 
+        # Glyph controls
+        widget = QtWidgets.QWidget()
+        layout = QtWidgets.QFormLayout()
+        widget.setLayout(layout)
+
+        self.glyph_widgets = []
+        check_box = QtWidgets.QCheckBox("Velocity Glyph")
+        check_box.stateChanged.connect(self.on_glyph_toggled)
+        check_box.setChecked(config.ShowGlyph)
+        layout.addRow(check_box)
+
+        label = QtWidgets.QLabel("Glyph Scale:")
+        glyph_scale_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        glyph_scale_slider.setRange(0, 100)
+        glyph_scale_slider.valueChanged.connect(self.on_glyph_scale_slider_change)
+        glyph_scale_slider.setValue(glyph_scale_to_slider(config.GlyphScale))
+        layout.addRow(label, glyph_scale_slider)
+        self.glyph_widgets += [label, glyph_scale_slider]
+
+        label = QtWidgets.QLabel("Glyph Opacity:")
+        glyph_opaticy_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        glyph_opaticy_slider.setRange(0, 100)
+        glyph_opaticy_slider.valueChanged.connect(self.on_glyph_opacity_slider_change)
+        glyph_opaticy_slider.setValue(glyph_opaticy_to_slider(config.GlyphOpacity))
+        layout.addRow(label, glyph_opaticy_slider)
+        self.glyph_widgets += [label, glyph_opaticy_slider]
+
+        label = QtWidgets.QLabel("Glyph Density:")
+        glyph_density_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        glyph_density_slider.setRange(0, 100)
+        glyph_density_slider.valueChanged.connect(self.on_glyph_density_slider_change)
+        glyph_density_slider.setValue(glyph_density_to_slider(config.GlyphDensity))
+        layout.addRow(label, glyph_density_slider)
+        self.glyph_widgets += [label, glyph_density_slider]
+
+        check_box = QtWidgets.QCheckBox("Color Glyph")
+        check_box.stateChanged.connect(self.on_glyph_color_toggled)
+        check_box.setChecked(config.ColorGlyph)
+        layout.addRow(check_box)
+        self.glyph_widgets += [check_box]
+        
+        self.toolbar.addWidget(widget)
+        self.toolbar.addSeparator()
+        self.on_glyph_toggled(config.ShowGlyph)
+        
         recenter = QtWidgets.QPushButton('Recenter Scene', self.toolbar)
         recenter.clicked.connect(self.recenter)
         self.toolbar.addWidget(recenter)
@@ -197,6 +271,7 @@ class DataViewToolBar(QtWidgets.QWidget):
         self.window.addToolBar(QtCore.Qt.RightToolBarArea, self.toolbar)
         self.window.ren.AddActor(self.interpolator.get_plane_actor())
         self.window.ren.AddActor(self.legend)
+        self.window.ren.AddActor(self.glyph.get_actor())
         thmin = config.RangeMin
         thmax = config.RangeMax
         if config.ThresholdMin is not None:
@@ -220,6 +295,7 @@ class DataViewToolBar(QtWidgets.QWidget):
             config.ThresholdMax = None
         config.ArrayName = array_name
         self.actors.update_actors()
+        self.set_thresh_text(config.ThresholdMin, config.ThresholdMax)
         if self.interpolator:
             self.window.ren.RemoveActor(self.interpolator.get_plane_actor())
         self.interpolator = Interpolator(self.actors.polydata)
@@ -285,6 +361,7 @@ class DataViewToolBar(QtWidgets.QWidget):
     def clear(self):
         self.window.ren.RemoveActor(self.interpolator.get_plane_actor())
         self.window.ren.RemoveActor(self.legend)
+        self.window.ren.RemoveActor(self.glyph.get_actor())
         self.toolbar.clear()
         self.toolbar.destroy()
         self.close()
@@ -318,4 +395,32 @@ class DataViewToolBar(QtWidgets.QWidget):
         value = self.scanPlaneSlider.value()
         alpha = value / 100
         self.interpolator.set_plane(self.scanPlaneAxis, alpha * config.CoordMax)
+        self.window.render()
+
+    def on_glyph_toggled(self, state):
+        config.ShowGlyph = state
+        self.glyph.get_actor().SetVisibility(state)
+        for widget in self.glyph_widgets:
+            widget.setEnabled(state)
+            widget.setVisible(state)
+        self.window.render()
+
+    def on_glyph_scale_slider_change(self, value):
+        config.GlyphScale = slider_to_glyph_scale(value)
+        self.glyph.set_scale(config.GlyphScale)
+        self.window.render()
+
+    def on_glyph_opacity_slider_change(self, value):
+        config.GlyphOpacity = slider_to_glyph_opacity(value)
+        self.glyph.set_opacity(config.GlyphOpacity)
+        self.window.render()
+
+    def on_glyph_color_toggled(self, state):
+        config.ColorGlyph = state
+        self.glyph.set_color_mode(state)
+        self.window.render()
+
+    def on_glyph_density_slider_change(self, value):
+        config.GlyphDensity = slider_to_glyph_density(value)
+        self.glyph.set_ratio(config.GlyphDensity)
         self.window.render()

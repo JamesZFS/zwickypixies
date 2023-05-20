@@ -11,7 +11,8 @@ from dataops.filters import threshold_points
 class Actors:
 
     def __init__(self, parent):
-        self.parent = parent
+        from rendering.window import Window
+        self.parent: Window = parent
         self.property_map = core.create_property_map()
         self.actors = {}
         self.mapper = vtkPointGaussianMapper()
@@ -48,7 +49,6 @@ class Actors:
                     self.parent.ren.AddActor(self.actors[name])
         elif config.CurrentView == 'Data View':
             pd = threshold_points(self.polydata)
-            self.parent.toolbar.set_thresh_text(config.ThresholdMin, config.ThresholdMax)
             split_polydata = core.split_particles(pd)
             self.actors = {name: core.create_data_view_actor(data) for name, data in split_polydata.items()}
             for name, (color, opacity, radius, show) in self.property_map.items():
