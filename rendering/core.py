@@ -1,14 +1,10 @@
 import vtk
-import helpers
 import config
-from dataops.filters import mask_points
 import numpy as np
 from vtkmodules.util.numpy_support import vtk_to_numpy, numpy_to_vtk
-import time
 
 
 def split_particles(polydata: vtk.vtkPolyData, pretty_print=False):
-    tic = time.time()
     pts_np = vtk_to_numpy(polydata.GetPoints().GetData())
     mask_np = vtk_to_numpy(polydata.GetPointData().GetArray('mask')).astype(np.int32)
     active_scalar_name = polydata.GetPointData().GetScalars().GetName()
@@ -43,9 +39,6 @@ def split_particles(polydata: vtk.vtkPolyData, pretty_print=False):
 
     type_polydata = {name: make_polydata(pts_np[mask], scalar_np[mask], hh_np[mask]) for name, mask in type_mask.items()}
 
-    toc = time.time()
-    print(f'Particle split took {toc - tic:.3f} seconds')
-    
     # pretty print counts
     for name, data in type_polydata.items():
         num = data.GetNumberOfPoints()
@@ -82,8 +75,10 @@ def create_data_view_actor(polydata: vtk.vtkPolyData, color: vtk.vtkColor3d = No
     mapper = vtk.vtkPointGaussianMapper()
     mapper.SetInputData(polydata)
     mapper.SetScalarRange([config.RangeMin, config.RangeMax])
-    mapper.SetScaleFactor(0.1)
+    # mapper.SetScaleFactor(0.1)
     mapper.EmissiveOff()
+    mapper.SetScaleArray('radius')  # assign heterogenous radius to each point
+    update_radius(polydata, min_value=0.01, max_value=0.2)
     mapper.SetLookupTable(config.Lut)
     actor = vtk.vtkActor()
     actor.SetMapper(mapper)
