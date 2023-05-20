@@ -1,5 +1,5 @@
 import re
-
+import os
 import vtk
 import config
 from PyQt5 import QtWidgets
@@ -11,9 +11,6 @@ from rendering.dataviewtoolbar import DataViewToolBar
 from rendering.actors import Actors
 from rendering.volumeviewtoolbar import VolumeViewToolBar
 
-'''
-    
-'''
 class Window(QtWidgets.QMainWindow):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
@@ -89,6 +86,11 @@ class Window(QtWidgets.QMainWindow):
     def start(self):
         self.iren.Initialize()
         self.show()
+        # For fast testing
+        file = 'data/Full.cosmo.600.vtp'
+        if os.path.isfile(file):
+            self.open_file(file)
+            self.recenter()        
 
     def set_view(self, view):
         if config.CurrentView == view:
