@@ -61,6 +61,25 @@ class Interpolator:
         self.plane_source.SetPoint2(0, config.CoordMax, z)
         self.plane_source.Update()
 
+    def set_plane(self, axis, val):
+        if axis == 'x':
+            self.plane_source.SetOrigin(val, 0, 0)
+            self.plane_source.SetPoint1(val, config.CoordMax, 0)
+            self.plane_source.SetPoint2(val, 0, config.CoordMax)
+        elif axis == 'y':
+            self.plane_source.SetOrigin(0, val, 0)
+            self.plane_source.SetPoint1(config.CoordMax, val, 0)
+            self.plane_source.SetPoint2(0, val, config.CoordMax)
+        elif axis == 'z':
+            self.plane_source.SetOrigin(0, 0, val)
+            self.plane_source.SetPoint1(config.CoordMax, 0, val)
+            self.plane_source.SetPoint2(0, config.CoordMax, val)
+        else:
+            print('Error: invalid axis')
+            exit(1)
+        self.plane_source.Update()
+
+
     def set_kernel_sharpness(self, sharpness):
         self.gaussian_kernel.SetSharpness(sharpness)
         self.gaussian_kernel.Modified()
