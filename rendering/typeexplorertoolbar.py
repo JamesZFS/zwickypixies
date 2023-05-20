@@ -118,9 +118,8 @@ class TypeExplorerToolBar(QtWidgets.QWidget):
         opacity = self.slider_value_to_property_value(self.opacity_sliders[name].value())
         radius = self.slider_value_to_property_value(self.radius_sliders[name].value())
         self.actors.edit_property_map(name, 1, opacity)
-        self.actors.edit_property_map(name, 2, opacity)
-        self.actors.actors[name].GetProperty().SetOpacity(opacity)
-        self.actors.actors[name].GetMapper().SetScaleFactor(radius)
+        self.actors.edit_property_map(name, 2, radius)
+        core.update_view_property(self.actors.actors[name], *self.actors.property_map[name])
         self.window.render()
 
     def deactivate_actor(self, name):

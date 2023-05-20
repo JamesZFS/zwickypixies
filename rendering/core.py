@@ -2,20 +2,61 @@ import vtk
 import helpers
 import config
 from dataops.filters import mask_points
+import numpy as np
+from vtkmodules.util.numpy_support import vtk_to_numpy, numpy_to_vtk
+import time
 
 
 def split_particles(polydata: vtk.vtkPolyData, pretty_print=False):
-    type_names = ['agn', 'star', 'wind', 'gas', 'baryon', 'dm']
-    type_polydata = {name: mask_points(polydata, particle_type=name, array_name=config.ArrayName) for name in
-                     type_names}
-    #assert sum([type_polydata[name].GetNumberOfPoints() for name in type_names]) == polydata.GetNumberOfPoints()
-    if pretty_print:
-        for name, data in type_polydata.items():
-            num = data.GetNumberOfPoints()
-            percent = num / polydata.GetNumberOfPoints() * 100
-            print(f'{name:8} {num:8} {percent:9.3f} %')
+    tic = time.time()
+    pts_np = vtk_to_numpy(polydata.GetPoints().GetData())
+    mask_np = vtk_to_numpy(polydata.GetPointData().GetArray('mask')).astype(np.int32)
+    active_scalar_name = polydata.GetPointData().GetScalars().GetName()
+    scalar_np = vtk_to_numpy(polydata.GetPointData().GetScalars())
+    hh_np = vtk_to_numpy(polydata.GetPointData().GetArray('hh'))
+
+    type_mask = {'dm': mask_np & (1 << 1) == 0}
+    type_mask['baryon'] = ~type_mask['dm']
+    type_mask['star'] = type_mask['baryon'] & (mask_np & (1 << 5) != 0)
+    type_mask['wind'] = type_mask['baryon'] & (mask_np & (1 << 6) != 0)
+    type_mask['gas'] = type_mask['baryon'] & (mask_np & (1 << 7) != 0)
+    type_mask['agn'] = type_mask['dm'] & (mask_np & (1 << 8) != 0)
+    type_mask['dm'] = type_mask['dm'] & ~type_mask['agn']
+    type_mask['baryon'] = type_mask['baryon'] & ~type_mask['star'] & ~type_mask['wind'] & ~type_mask['gas']
+
+    def make_polydata(pts, scalars, hh):
+        out = vtk.vtkPolyData()
+        point_data = vtk.vtkPoints()
+        point_data.SetData(numpy_to_vtk(pts))
+        out.SetPoints(point_data)
+        
+        active_scalar_arr = numpy_to_vtk(scalars)
+        active_scalar_arr.SetName(active_scalar_name)
+        out.GetPointData().AddArray(active_scalar_arr)
+
+        hh_arr = numpy_to_vtk(hh)
+        hh_arr.SetName('hh')
+        out.GetPointData().AddArray(hh_arr)
+
+        out.GetPointData().SetActiveScalars(active_scalar_name)
+        return out
+
+    type_polydata = {name: make_polydata(pts_np[mask], scalar_np[mask], hh_np[mask]) for name, mask in type_mask.items()}
+
+    toc = time.time()
+    print(f'Particle split took {toc - tic:.3f} seconds')
+    
+    # pretty print counts
+    for name, data in type_polydata.items():
+        num = data.GetNumberOfPoints()
+        percent = num / polydata.GetNumberOfPoints() * 100
+        print(f'{name:8} {num:8} {percent:9.3f} %')
+
+    # check counts
+    assert sum([type_polydata[name].GetNumberOfPoints() for name in type_mask]) == polydata.GetNumberOfPoints()
 
     return type_polydata
+
 
 
 def create_type_explorer_actor(polydata: vtk.vtkPolyData, color: vtk.vtkColor3d = None, opacity: float = None,
@@ -24,7 +65,9 @@ def create_type_explorer_actor(polydata: vtk.vtkPolyData, color: vtk.vtkColor3d 
     mapper.SetInputData(polydata)
     mapper.ScalarVisibilityOff()
     mapper.EmissiveOff()
-    if radius is not None: mapper.SetScaleFactor(radius)
+    mapper.SetScaleArray('radius')  # assign heterogenous radius to each point
+    if radius is not None:
+        update_radius(polydata, min_value=0.5 * radius, max_value=1.5 * radius)
 
     actor = vtk.vtkActor()
     actor.SetMapper(mapper)
@@ -39,7 +82,7 @@ def create_data_view_actor(polydata: vtk.vtkPolyData, color: vtk.vtkColor3d = No
     mapper = vtk.vtkPointGaussianMapper()
     mapper.SetInputData(polydata)
     mapper.SetScalarRange([config.RangeMin, config.RangeMax])
-    mapper.SetScaleFactor(0.2)
+    mapper.SetScaleFactor(0.1)
     mapper.EmissiveOff()
     mapper.SetLookupTable(config.Lut)
     actor = vtk.vtkActor()
@@ -55,7 +98,23 @@ def update_view_property(actor: vtk.vtkActor, color: vtk.vtkColor3d = None, opac
     if opacity:
         actor.GetProperty().SetOpacity(opacity)
     if radius:
-        actor.GetMapper().SetScaleFactor(radius)
+        polydata = actor.GetMapper().GetInput()
+        update_radius(polydata, min_value=0.5 * radius, max_value=1.5 * radius)
+
+
+# Normalize sph smoothing length to a given max value, and store it to radius array
+def update_radius(polydata: vtk.vtkPolyData, min_value: float = 0.01, max_value: float = 1.):
+    hh = vtk_to_numpy(polydata.GetPointData().GetArray('hh'))
+    if len(hh) == 0: return
+    hmax = hh.max()
+    hmin = hh.min()
+    if hmax - hmin < 1e-6:
+        rad = np.ones_like(hh) * max_value
+    else:
+        rad = min_value + (max_value - min_value) * (hh - hmin) / (hmax - hmin)
+    rad_arr = numpy_to_vtk(rad)
+    rad_arr.SetName('radius')
+    polydata.GetPointData().AddArray(rad_arr)
 
 
 def update_view_property_data_view(actor: vtk.vtkActor, color: vtk.vtkColor3d, opacity: float, radius: float,
