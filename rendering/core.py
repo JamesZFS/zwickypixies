@@ -76,14 +76,14 @@ def create_data_view_actor(polydata: vtk.vtkPolyData, color: vtk.vtkColor3d = No
     mapper = vtk.vtkPointGaussianMapper()
     mapper.SetInputData(polydata)
     mapper.SetScalarRange([config.RangeMin, config.RangeMax])
-    # mapper.SetScaleFactor(0.1)
+    mapper.SetScaleFactor(config.DataViewRadius)
     mapper.EmissiveOff()
     mapper.SetScaleArray('radius')  # assign heterogenous radius to each point
     update_radius(polydata, min_value=0.01, max_value=0.2)
     mapper.SetLookupTable(config.Lut)
     actor = vtk.vtkActor()
     actor.SetMapper(mapper)
-    actor.GetProperty().SetOpacity(0.2)
+    actor.GetProperty().SetOpacity(config.DataViewOpacity)
     return actor
 
 

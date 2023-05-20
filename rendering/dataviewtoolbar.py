@@ -81,14 +81,12 @@ class CollapsibleGroupBox(QtWidgets.QGroupBox):
 def slider_to_glyph_scale(value):
     return value / 100 * 3.0 + 0.01  # 0.01 to 3.0
 
-
 def glyph_scale_to_slider(scale):
     return int((scale - 0.01) / 3.0 * 100)
 
 
 def glyph_opaticy_to_slider(opacity):
     return int(opacity ** (1 / 2.4) * 100)
-
 
 def slider_to_glyph_opacity(value):
     return (value / 100) ** 2.4
@@ -97,9 +95,22 @@ def slider_to_glyph_opacity(value):
 def glyph_density_to_slider(density):
     return int(density ** (1/5) * 100)
 
-
 def slider_to_glyph_density(value):
     return (value / 100) ** 5
+
+
+def point_opaticy_to_slider(opacity):
+    return int(opacity ** (1 / 2.4) * 100)
+
+def slider_to_point_opacity(value):
+    return (value / 100) ** 2.4
+
+
+def point_radius_to_slider(radius):
+    return int((radius - 0.01) ** (1/2.4) * 100)
+
+def slider_to_point_radius(value):
+    return (value / 100) ** 2.4 + 0.01
 
 
 class DataViewToolBar(QtWidgets.QWidget):
@@ -174,9 +185,18 @@ class DataViewToolBar(QtWidgets.QWidget):
         label = QtWidgets.QLabel("Opacity:")
         pointOpacitySlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         pointOpacitySlider.setRange(0, 100)
-        pointOpacitySlider.setValue(50)
+        pointOpacitySlider.setValue(point_opaticy_to_slider(config.DataViewOpacity))
         pointOpacitySlider.valueChanged.connect(self.onPointOpacitySliderChange)
         layout.addRow(label, pointOpacitySlider)
+
+        # Radius control
+        label = QtWidgets.QLabel("Radius:")
+        pointRadiusSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        pointRadiusSlider.setRange(0, 100)
+        pointRadiusSlider.setValue(point_radius_to_slider(config.DataViewRadius))
+        pointRadiusSlider.valueChanged.connect(self.onPointRadiusSliderChange)
+        layout.addRow(label, pointRadiusSlider)
+
         self.toolbar.addWidget(widget)
         self.toolbar.addSeparator()
 
@@ -322,10 +342,17 @@ class DataViewToolBar(QtWidgets.QWidget):
     def onPointOpacitySliderChange(self, value):
         if value == 100:
             value -= 1e-5
-        config.DataViewOpacity = (value / 100)**2.4
+        config.DataViewOpacity = slider_to_point_opacity(value)
         for name, _ in self.actors.property_map.items():
             if config.ShowFilter[name]:
                 self.actors.actors[name].GetProperty().SetOpacity(config.DataViewOpacity)
+        self.window.render()
+
+    def onPointRadiusSliderChange(self, value):
+        config.DataViewRadius = slider_to_point_radius(value)
+        for name, _ in self.actors.property_map.items():
+            if config.ShowFilter[name]:
+                self.actors.actors[name].GetMapper().SetScaleFactor(config.DataViewRadius)
         self.window.render()
 
     def onScanPlaneSliderChange(self, value):

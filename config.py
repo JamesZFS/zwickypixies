@@ -37,8 +37,8 @@ GlyphOpacity = 0.5
 GlyphDensity = 0.05
 ColorGlyph = False
 
-DataViewOpacity = 0.2
-DataViewRadius = 0.2
+DataViewOpacity = 0.5
+DataViewRadius = 0.3
 CoordMax = 64  # max x/y/z coordinate value
 CellRes = 50  # number of cells in each dimension during interpolation 
 
