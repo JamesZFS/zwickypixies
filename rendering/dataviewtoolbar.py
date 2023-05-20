@@ -231,13 +231,15 @@ class DataViewToolBar(QtWidgets.QWidget):
 
     def set_min_threshold(self):
         min_thresh = self.min_thresh.text()
-        config.ThresholdMin = float(min_thresh)
+        max_thresh = self.max_thresh.text()
+        config.ThresholdMin = min(float(min_thresh), float(max_thresh))
         self.actors.update_actors()
         self.window.render()
 
     def set_max_threshold(self):
+        min_thresh = self.min_thresh.text()
         max_thresh = self.max_thresh.text()
-        config.ThresholdMax = float(max_thresh)
+        config.ThresholdMax = max(float(min_thresh), float(max_thresh))
         self.actors.update_actors()
         self.window.render()
 
@@ -296,8 +298,8 @@ class DataViewToolBar(QtWidgets.QWidget):
         self.window.render()
 
     def set_thresh_text(self, min_thresh, max_thresh):
-        self.min_thresh.setText(str(min_thresh))
-        self.max_thresh.setText(str(max_thresh))
+        self.min_thresh.setText(f'{min_thresh:.4e}')
+        self.max_thresh.setText(f'{max_thresh:.4e}')
 
     def toggle_legend(self, state):
         if state == QtCore.Qt.Checked:

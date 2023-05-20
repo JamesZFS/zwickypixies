@@ -40,10 +40,11 @@ def split_particles(polydata: vtk.vtkPolyData, pretty_print=False):
     type_polydata = {name: make_polydata(pts_np[mask], scalar_np[mask], hh_np[mask]) for name, mask in type_mask.items()}
 
     # pretty print counts
-    for name, data in type_polydata.items():
-        num = data.GetNumberOfPoints()
-        percent = num / polydata.GetNumberOfPoints() * 100
-        print(f'{name:8} {num:8} {percent:9.3f} %')
+    if pretty_print:
+        for name, data in type_polydata.items():
+            num = data.GetNumberOfPoints()
+            percent = num / polydata.GetNumberOfPoints() * 100 if polydata.GetNumberOfPoints() > 0 else 0
+            print(f'{name:8} {num:8} {percent:9.3f} %')
 
     # check counts
     assert sum([type_polydata[name].GetNumberOfPoints() for name in type_mask]) == polydata.GetNumberOfPoints()
