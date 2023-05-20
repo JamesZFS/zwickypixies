@@ -27,6 +27,7 @@ class Actors:
             reader.Update()
             self.polydata: vtk.vtkPolyData = reader.GetOutput()
             self.polycopy = self.polydata
+            self.update_scalars()
 
     def update_scalars(self):
         self.polydata.GetPointData().SetActiveScalars(config.ArrayName)
@@ -54,23 +55,27 @@ class Actors:
                 if show:
                     self.parent.ren.AddActor(self.actors[name])
         elif config.CurrentView == 'Volume View':
+            print('Computing volume...')
             bounds = self.polycopy.GetBounds()
             grid_resolution = (100, 100, 100)
             grid = core.map_point_cloud_to_grid(self.polycopy, bounds, grid_resolution)
-            color_map = core.create_view_color_map()
-            grid_actor = core.create_grid_actor(grid, color_map)
+            colorTransferFunction = core.create_view_color_transfer_function()
+            volume = core.create_grid_volume(grid, colorTransferFunction)
             opacityTransferFunction = vtkPiecewiseFunction()
             opacityTransferFunction.AddPoint(20, 0)
             opacityTransferFunction.AddPoint(255, 1)
-            grid_actor.GetProperty().SetColor(color_map)
-            grid_actor.GetProperty().SetScalarOpacity(opacityTransferFunction)
-            self.actors = {'grid': grid_actor}
-            self.parent.ren.AddActor(grid_actor)
+            volume.GetProperty().SetColor(colorTransferFunction)
+            volume.GetProperty().SetScalarOpacity(opacityTransferFunction)
+            self.actors = {'grid': volume}
+            self.parent.ren.AddVolume(volume)
 
 
     def remove_actors(self):
-        for actor in self.actors.values():
-            self.parent.ren.RemoveActor(actor)
+        for name, actor in self.actors.items():
+            if name == 'grid':
+                self.parent.ren.RemoveVolume(actor)
+            else:
+                self.parent.ren.RemoveActor(actor)
         self.actors = {}
 
     def add_actors(self):
