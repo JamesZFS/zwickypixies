@@ -178,13 +178,13 @@ def main():
 
     grid.GetPointData().SetScalars(scalars)
 
-    color_map = colorTransferFunction = vtk.vtkColorTransferFunction()
+    color_map = vtk.vtkColorTransferFunction()
 
-    colorTransferFunction.AddRGBPoint(0.0, 0.0, 0.0, 0.0)
-    colorTransferFunction.AddRGBPoint(64.0, 1.0, 0.0, 0.0)
-    colorTransferFunction.AddRGBPoint(128.0, 0.0, 0.0, 1.0)
-    colorTransferFunction.AddRGBPoint(192.0, 0.0, 1.0, 0.0)
-    colorTransferFunction.AddRGBPoint(255.0, 1.0, 1.0, 1.0)
+    color_map.AddRGBPoint(0.0, 0.0, 0.0, 0.0)
+    color_map.AddRGBPoint(64.0, 1.0, 0.0, 0.0)
+    color_map.AddRGBPoint(128.0, 0.0, 0.0, 1.0)
+    color_map.AddRGBPoint(192.0, 0.0, 1.0, 0.0)
+    color_map.AddRGBPoint(255.0, 1.0, 1.0, 1.0)
     mapper = vtk.vtkSmartVolumeMapper()
     mapper.SetInputData(grid)
 

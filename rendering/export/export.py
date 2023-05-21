@@ -15,7 +15,7 @@ class Exporter:
         self.window = window
         thread = threading.Thread(target=self.create_video)
         self.renderer = vtk.vtkRenderer()
-        self.renderinterpolationsteps = 10
+        self.renderinterpolationsteps = 2
         self.actors = ExportActors(self.renderer)
         self.actors.set_property_map(self.window.actors.property_map)
         thread.start()
