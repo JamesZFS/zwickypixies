@@ -1,3 +1,4 @@
+import subprocess
 import threading
 import vtk
 from vtkmodules.util.numpy_support import vtk_to_numpy, numpy_to_vtk
@@ -18,7 +19,6 @@ class Exporter:
         self.actors = ExportActors(self.renderer)
         self.actors.set_property_map(self.window.actors.property_map)
         thread.start()
-        print("Done")
 
     def disable_controls(self):
         self.window.menubar.menubar.setDisabled(True)
@@ -41,9 +41,9 @@ class Exporter:
         filename1 = config.File
         filename2 = config.File
         timesteps = self.create_array(self.renderinterpolationsteps)
-        frames = []
+        frames = ["python3", "./rendering/export/videocreator.py"]
         frame = 0
-        for i in range(620, 623, 2):
+        for i in range(0, 623, 2):
             self.window.bottombar.updateBottomBarProgress(i)
             numbers1 = re.findall(r"\d+", filename1)
             if numbers1:
@@ -79,8 +79,10 @@ class Exporter:
                 frames.append(fpath)
                 frame += 1
 
+        subprocess.run(frames)
         self.enable_controls()
         self.window.bottombar.clearBottomBarProgress()
+        return frames
 
     def eliminate_unequal_ids(self, polydata1, polydata2):
         points_data1 = polydata1.GetPointData()

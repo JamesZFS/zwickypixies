@@ -17,7 +17,6 @@ class ExportActors:
         self.mapper = vtkPointGaussianMapper()
         self.polydata = None
 
-
     def set_polydata(self, polydata):
         self.polydata = polydata
     def set_property_map(self, property_map):
@@ -50,8 +49,8 @@ class ExportActors:
             bounds = self.polycopy.GetBounds()
             grid_resolution = (100, 100, 100)
             grid = core.map_point_cloud_to_grid(self.polycopy, bounds, grid_resolution)
-            color_map = core.create_view_color_transfer_function()
-            grid_actor = core.create_grid_volume(grid, color_map)
+            color_map = core.create_view_color_map()
+            grid_actor = core.create_grid_actor(grid, color_map)
             opacityTransferFunction = vtkPiecewiseFunction()
             opacityTransferFunction.AddPoint(20, 0)
             opacityTransferFunction.AddPoint(255, 1)
