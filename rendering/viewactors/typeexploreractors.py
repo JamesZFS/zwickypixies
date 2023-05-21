@@ -18,11 +18,11 @@ def get_type_explorer_actors(polydata: vtk.vtkPolyData, color: vtk.vtkColor3d = 
     return actor
 
 
-def create_type_explorer_actors(actor):
-    split_polydata = core.split_particles(actor.polydata)
-    actor.actors = {name: get_type_explorer_actors(data) for name, data in split_polydata.items()}
-    for name, actor in actor.actors.items():
-        core.update_view_property(actor, *actor.property_map[name])
-    for name, (color, opacity, radius, show) in actor.property_map.items():
+def create_type_explorer_actors(actorhandler):
+    split_polydata = core.split_particles(actorhandler.polydata)
+    actorhandler.actors = {name: get_type_explorer_actors(data) for name, data in split_polydata.items()}
+    for name, actor in actorhandler.actors.items():
+        core.update_view_property(actor, *actorhandler.property_map[name])
+    for name, (color, opacity, radius, show) in actorhandler.property_map.items():
         if show:
-            actor.parent.ren.AddActor(actor.actors[name])
+            actorhandler.parent.ren.AddActor(actorhandler.actors[name])
