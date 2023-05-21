@@ -6,6 +6,8 @@ import config
 import vtk
 
 from dataops.filters import threshold_points
+from rendering.viewactors.dataviewactors import get_data_view_actors
+from rendering.viewactors.typeexploreractors import get_type_explorer_actors
 
 
 class ExportActors:
@@ -32,7 +34,7 @@ class ExportActors:
         config.RangeMax = scalar_range[1]
         if config.CurrentView == 'Type Explorer':
             split_polydata = core.split_particles(self.polydata)
-            self.actors = {name: core.create_type_explorer_actor(data) for name, data in split_polydata.items()}
+            self.actors = {name: get_type_explorer_actors(data) for name, data in split_polydata.items()}
             for name, actor in self.actors.items():
                 core.update_view_property(actor, *self.property_map[name])
             for name, (color, opacity, radius, show) in self.property_map.items():
@@ -41,7 +43,7 @@ class ExportActors:
         elif config.CurrentView == 'Data View':
             pd = threshold_points(self.polydata)
             split_polydata = core.split_particles(pd)
-            self.actors = {name: core.create_data_view_actor(data) for name, data in split_polydata.items()}
+            self.actors = {name: get_data_view_actors(data) for name, data in split_polydata.items()}
             for name, (color, opacity, radius, show) in self.property_map.items():
                 if show:
                     self.renderer.AddActor(self.actors[name])
