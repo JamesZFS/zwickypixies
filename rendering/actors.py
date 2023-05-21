@@ -1,11 +1,10 @@
-from vtkmodules.vtkCommonDataModel import vtkPiecewiseFunction
 from vtkmodules.vtkRenderingCore import vtkPointGaussianMapper
-
+from rendering.viewactors.dataviewactors import create_data_view_actors
 import rendering.core as core
 import config
 import vtk
-
-from dataops.filters import threshold_points
+from rendering.viewactors.typeexploreractors import create_type_explorer_actors
+from rendering.viewactors.volumeviewactors import create_volume_view_actors
 
 
 class Actors:
@@ -40,35 +39,11 @@ class Actors:
         config.RangeMin = range[0]
         config.RangeMax = range[1]
         if config.CurrentView == 'Type Explorer':
-            split_polydata = core.split_particles(self.polydata)
-            self.actors = {name: core.create_type_explorer_actor(data) for name, data in split_polydata.items()}
-            for name, actor in self.actors.items():
-                core.update_view_property(actor, *self.property_map[name])
-            for name, (color, opacity, radius, show) in self.property_map.items():
-                if show:
-                    self.parent.ren.AddActor(self.actors[name])
+            create_type_explorer_actors(self)
         elif config.CurrentView == 'Data View':
-            pd = threshold_points(self.polydata)
-            split_polydata = core.split_particles(pd)
-            self.actors = {name: core.create_data_view_actor(data) for name, data in split_polydata.items()}
-            for name, (color, opacity, radius, show) in self.property_map.items():
-                if show:
-                    self.parent.ren.AddActor(self.actors[name])
+            create_data_view_actors(self)
         elif config.CurrentView == 'Volume View':
-            print('Computing volume...')
-            bounds = self.polycopy.GetBounds()
-            grid_resolution = (100, 100, 100)
-            grid = core.map_point_cloud_to_grid(self.polycopy, bounds, grid_resolution)
-            colorTransferFunction = core.create_view_color_transfer_function()
-            volume = core.create_grid_volume(grid, colorTransferFunction)
-            opacityTransferFunction = vtkPiecewiseFunction()
-            opacityTransferFunction.AddPoint(20, 0)
-            opacityTransferFunction.AddPoint(255, 1)
-            volume.GetProperty().SetColor(colorTransferFunction)
-            volume.GetProperty().SetScalarOpacity(opacityTransferFunction)
-            self.actors = {'grid': volume}
-            self.parent.ren.AddVolume(volume)
-
+            create_volume_view_actors(self)
 
     def remove_actors(self):
         for name, actor in self.actors.items():

@@ -46,65 +46,68 @@ def set_vectors_by_velocity(src: vtk.vtkPointData, min_scale=1.0, max_scale=2.0)
     src.AddArray(velocity_vtk)
     src.SetActiveVectors('velocity')
 
+def main():
+    filename = '/home/leonardo/Documents/Cosmology/Full.cosmo.480.vtp'
+    lut = create_lookup_table('coolwarm')
 
-filename = 'data/Full.cosmo.600.vtp'
-lut = create_lookup_table('coolwarm')
+    reader = vtk.vtkXMLPolyDataReader()
+    reader.SetFileName(filename)
+    reader.Update()
 
-reader = vtk.vtkXMLPolyDataReader()
-reader.SetFileName(filename)
-reader.Update()
+    polydata: vtk.vtkPolyData = reader.GetOutput()
+    polydata.GetPointData().SetActiveScalars(config.ArrayName)
+    set_vectors_by_velocity(polydata.GetPointData())
 
-polydata: vtk.vtkPolyData = reader.GetOutput()
-polydata.GetPointData().SetActiveScalars(config.ArrayName)
-set_vectors_by_velocity(polydata.GetPointData())
+    # Choose a random subset of points
+    ratio = 0.05  # ratio of points to keep
+    mask_points = vtk.vtkMaskPoints()
+    mask_points.SetInputData(polydata)
+    mask_points.SetOnRatio(int(1 / ratio))
+    mask_points.RandomModeOn()
 
-# Choose a random subset of points
-ratio = 0.05  # ratio of points to keep
-mask_points = vtk.vtkMaskPoints()
-mask_points.SetInputData(polydata)
-mask_points.SetOnRatio(int(1 / ratio))
-mask_points.RandomModeOn()
+    # Visualize as point gaussians
+    point_mapper = vtk.vtkPointGaussianMapper()
+    point_mapper.SetInputConnection(mask_points.GetOutputPort())
+    point_mapper.EmissiveOff()
+    point_mapper.SetScaleFactor(0.1)
+    point_mapper.SetLookupTable(lut)
 
-# Visualize as point gaussians
-point_mapper = vtk.vtkPointGaussianMapper()
-point_mapper.SetInputConnection(mask_points.GetOutputPort())
-point_mapper.EmissiveOff()
-point_mapper.SetScaleFactor(0.1)
-point_mapper.SetLookupTable(lut)
+    point_actor = vtk.vtkActor()
+    point_actor.SetMapper(point_mapper)
+    point_actor.GetProperty().SetOpacity(0.5)
 
-point_actor = vtk.vtkActor()
-point_actor.SetMapper(point_mapper)
-point_actor.GetProperty().SetOpacity(0.5)
+    # Create a glyph filter, mapper, and actor
+    glyph = get_glyphs(mask_points.GetOutputPort(), scale_factor=1.0)
 
-# Create a glyph filter, mapper, and actor
-glyph = get_glyphs(mask_points.GetOutputPort(), scale_factor=1.0)
+    glyph_mapper = vtk.vtkPolyDataMapper()
+    glyph_mapper.SetInputConnection(glyph.GetOutputPort())
+    glyph_mapper.SetScalarModeToUsePointFieldData()
+    glyph_mapper.SelectColorArray(config.ArrayName)
+    glyph_mapper.ScalarVisibilityOn()
+    # glyph_mapper.ScalarVisibilityOff()
+    glyph_mapper.SetLookupTable(lut)
 
-glyph_mapper = vtk.vtkPolyDataMapper()
-glyph_mapper.SetInputConnection(glyph.GetOutputPort())
-glyph_mapper.SetScalarModeToUsePointFieldData()
-glyph_mapper.SelectColorArray(config.ArrayName)
-glyph_mapper.ScalarVisibilityOn()
-# glyph_mapper.ScalarVisibilityOff()
-glyph_mapper.SetLookupTable(lut)
+    glyph_actor = vtk.vtkActor()
+    glyph_actor.SetMapper(glyph_mapper)
+    glyph_actor.GetProperty().SetOpacity(0.5)
 
-glyph_actor = vtk.vtkActor()
-glyph_actor.SetMapper(glyph_mapper)
-glyph_actor.GetProperty().SetOpacity(0.5)
+    # Color bar
+    legend = create_legend(lut, config.ArrayName)
 
-# Color bar
-legend = create_legend(lut, config.ArrayName)
+    ren = vtk.vtkRenderer()
+    ren.AddActor(point_actor)
+    ren.AddActor(glyph_actor)
+    ren.AddActor(legend)
+    ren.SetBackground(0, 0, 0)
 
-ren = vtk.vtkRenderer()
-ren.AddActor(point_actor)
-ren.AddActor(glyph_actor)
-ren.AddActor(legend)
-ren.SetBackground(0, 0, 0)
+    renWin = vtk.vtkRenderWindow()
+    renWin.AddRenderer(ren)
+    renWin.SetSize(1024, 1024)
 
-renWin = vtk.vtkRenderWindow()
-renWin.AddRenderer(ren)
-renWin.SetSize(1024, 1024)
+    iren = vtk.vtkRenderWindowInteractor()
+    iren.SetRenderWindow(renWin)
+    iren.Initialize()
+    iren.Start()
 
-iren = vtk.vtkRenderWindowInteractor()
-iren.SetRenderWindow(renWin)
-iren.Initialize()
-iren.Start()
+if __name__ == "__main__":
+    main()

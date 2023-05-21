@@ -6,10 +6,10 @@ from PyQt5 import QtWidgets
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 from rendering.menubar import MenuBar
 from rendering.bottombar import BottomBar
-from rendering.typeexplorertoolbar import TypeExplorerToolBar
-from rendering.dataviewtoolbar import DataViewToolBar
+from rendering.toolbars.typeexplorertoolbar import TypeExplorerToolBar
+from rendering.toolbars.dataviewtoolbar import DataViewToolBar
 from rendering.actors import Actors
-from rendering.volumeviewtoolbar import VolumeViewToolBar
+from rendering.toolbars.volumeviewtoolbar import VolumeViewToolBar
 
 class Window(QtWidgets.QMainWindow):
     def __init__(self, parent=None) -> None:

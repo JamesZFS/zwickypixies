@@ -3,7 +3,6 @@ import config
 import numpy as np
 from vtkmodules.util.numpy_support import vtk_to_numpy, numpy_to_vtk
 
-
 def split_particles(polydata: vtk.vtkPolyData, pretty_print=False):
     pts_np = vtk_to_numpy(polydata.GetPoints().GetData())
     mask_np = vtk_to_numpy(polydata.GetPointData().GetArray('mask')).astype(np.int32)
@@ -50,42 +49,6 @@ def split_particles(polydata: vtk.vtkPolyData, pretty_print=False):
     assert sum([type_polydata[name].GetNumberOfPoints() for name in type_mask]) == polydata.GetNumberOfPoints()
 
     return type_polydata
-
-
-
-def create_type_explorer_actor(polydata: vtk.vtkPolyData, color: vtk.vtkColor3d = None, opacity: float = None,
-                               radius: float = None, show=None):
-    mapper = vtk.vtkPointGaussianMapper()
-    mapper.SetInputData(polydata)
-    mapper.ScalarVisibilityOff()
-    mapper.EmissiveOff()
-    mapper.SetScaleArray('radius')  # assign heterogenous radius to each point
-    if radius is not None:
-        update_radius(polydata, min_value=0.5 * radius, max_value=1.5 * radius)
-
-    actor = vtk.vtkActor()
-    actor.SetMapper(mapper)
-    if color is not None: actor.GetProperty().SetColor(color)
-    if opacity is not None: actor.GetProperty().SetOpacity(opacity)
-
-    return actor
-
-
-def create_data_view_actor(polydata: vtk.vtkPolyData, color: vtk.vtkColor3d = None, opacity: float = None,
-                           radius: float = None, show=None):
-    mapper = vtk.vtkPointGaussianMapper()
-    mapper.SetInputData(polydata)
-    mapper.SetScalarRange([config.RangeMin, config.RangeMax])
-    mapper.SetScaleFactor(config.DataViewRadius)
-    mapper.EmissiveOff()
-    mapper.SetScaleArray('radius')  # assign heterogenous radius to each point
-    update_radius(polydata, min_value=0.01, max_value=0.2)
-    mapper.SetLookupTable(config.Lut)
-    actor = vtk.vtkActor()
-    actor.SetMapper(mapper)
-    actor.GetProperty().SetOpacity(config.DataViewOpacity)
-    return actor
-
 
 def update_view_property(actor: vtk.vtkActor, color: vtk.vtkColor3d = None, opacity: float = None, radius: float = None,
                          show=None):

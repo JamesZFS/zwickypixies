@@ -42,4 +42,4 @@ DataViewRadius = 0.3
 CoordMax = 64  # max x/y/z coordinate value
 CellRes = 50  # number of cells in each dimension during interpolation 
 
-Lut = None  # Lookup table for coloring the particles, shared by different actors
+Lut = None  # Lookup table for coloring the particles, shared by different viewactors
