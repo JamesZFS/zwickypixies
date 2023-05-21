@@ -46,9 +46,9 @@ class CustomArrayBox(QtWidgets.QGroupBox):
         self.opacity = opacity
 
 
-class CollapsibleGroupBox(QtWidgets.QGroupBox):
+class ScanPlaneGroupBox(QtWidgets.QGroupBox):
     def __init__(self, name, toolbox):
-        super(CollapsibleGroupBox, self).__init__()
+        super(ScanPlaneGroupBox, self).__init__()
         self.setStyleSheet("QGroupBox { border: none; }")
         self.setCheckable(True)
         self.toolbox = toolbox
@@ -77,6 +77,35 @@ class CollapsibleGroupBox(QtWidgets.QGroupBox):
         config.ShowLegend = checked
         self.toolbox.toggle_plane(checked)
 
+class GlyphGroupBox(QtWidgets.QGroupBox):
+    def __init__(self, name, toolbox):
+        super(GlyphGroupBox, self).__init__()
+        self.setStyleSheet("QGroupBox { border: none; }")
+        self.setCheckable(True)
+        self.toolbox = toolbox
+        self.setChecked(config.ShowScanPlane)
+        self.name = name
+        self.setTitle(name)
+        self.setStyleSheet(
+            "QGroupBox { border: none; margin-top: 12px; } QGroupBox::title { subcontrol-origin: padding: 0px 5px 0px "
+            "5px; }")
+        self.toggled.connect(self.on_toggled)
+
+    def init_checked(self):
+        for i in range(self.layout().count()):
+            self.layout().itemAt(i).widget().setVisible(config.ShowScanPlane)
+            self.layout().itemAt(i).widget().setEnabled(config.ShowScanPlane)
+
+    def on_toggled(self, checked):
+        if checked:
+            self.layout().setContentsMargins(10, 10, 10, 10)
+        else:
+            self.layout().setContentsMargins(0, 0, 0, 0)
+        for i in range(self.layout().count()):
+            self.layout().itemAt(i).widget().setVisible(checked)
+            self.layout().itemAt(i).widget().setEnabled(checked)
+        config.ShowLegend = checked
+        self.toolbox.on_glyph_toggled(checked)
 
 def slider_to_glyph_scale(value):
     return value / 100 * 3.0 + 0.01  # 0.01 to 3.0
@@ -208,7 +237,7 @@ class DataViewToolBar(QtWidgets.QWidget):
         self.toolbar.addSeparator()
 
         # Scan plane
-        groupBox = CollapsibleGroupBox("Scan Plane", self)
+        groupBox = ScanPlaneGroupBox("Scan Plane", self)
         layout = QtWidgets.QFormLayout()
         groupBox.setLayout(layout)
 
@@ -239,15 +268,13 @@ class DataViewToolBar(QtWidgets.QWidget):
         self.toolbar.addWidget(groupBox)
 
         # Glyph controls
+
+
+        self.glyph_widgets = []
+        groupBox = GlyphGroupBox("Velocity Glyphs", self)
         widget = QtWidgets.QWidget()
         layout = QtWidgets.QFormLayout()
         widget.setLayout(layout)
-
-        self.glyph_widgets = []
-        check_box = QtWidgets.QCheckBox("Velocity Glyph")
-        check_box.stateChanged.connect(self.on_glyph_toggled)
-        check_box.setChecked(config.ShowGlyph)
-        layout.addRow(check_box)
 
         label = QtWidgets.QLabel("Glyph Scale:")
         glyph_scale_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
@@ -255,7 +282,6 @@ class DataViewToolBar(QtWidgets.QWidget):
         glyph_scale_slider.valueChanged.connect(self.on_glyph_scale_slider_change)
         glyph_scale_slider.setValue(glyph_scale_to_slider(config.GlyphScale))
         layout.addRow(label, glyph_scale_slider)
-        self.glyph_widgets += [label, glyph_scale_slider]
 
         label = QtWidgets.QLabel("Glyph Opacity:")
         glyph_opaticy_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
@@ -263,7 +289,7 @@ class DataViewToolBar(QtWidgets.QWidget):
         glyph_opaticy_slider.valueChanged.connect(self.on_glyph_opacity_slider_change)
         glyph_opaticy_slider.setValue(glyph_opaticy_to_slider(config.GlyphOpacity))
         layout.addRow(label, glyph_opaticy_slider)
-        self.glyph_widgets += [label, glyph_opaticy_slider]
+
 
         label = QtWidgets.QLabel("Glyph Density:")
         glyph_density_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
@@ -271,15 +297,15 @@ class DataViewToolBar(QtWidgets.QWidget):
         glyph_density_slider.valueChanged.connect(self.on_glyph_density_slider_change)
         glyph_density_slider.setValue(glyph_density_to_slider(config.GlyphDensity))
         layout.addRow(label, glyph_density_slider)
-        self.glyph_widgets += [label, glyph_density_slider]
 
         check_box = QtWidgets.QCheckBox("Color Glyph")
         check_box.stateChanged.connect(self.on_glyph_color_toggled)
         check_box.setChecked(config.ColorGlyph)
         layout.addRow(check_box)
-        self.glyph_widgets += [check_box]
+        groupBox.setLayout(layout)
+        groupBox.init_checked()
         
-        self.toolbar.addWidget(widget)
+        self.toolbar.addWidget(groupBox)
         self.toolbar.addSeparator()
         self.on_glyph_toggled(config.ShowGlyph)
         
@@ -319,6 +345,7 @@ class DataViewToolBar(QtWidgets.QWidget):
         if self.interpolator:
             self.window.ren.RemoveActor(self.interpolator.get_plane_actor())
         self.interpolator = Interpolator(self.actors.polydata)
+        self.interpolator.get_plane_actor().SetVisibility(config.ShowScanPlane)
         self.window.ren.AddActor(self.interpolator.get_plane_actor())
         self.window.render()
 
