@@ -1,7 +1,7 @@
 import cv2
 import sys
 import config
-import datetime;
+import datetime
 
 
 if __name__ == "__main__":

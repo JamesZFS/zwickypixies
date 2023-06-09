@@ -49,11 +49,11 @@ def create_volume_view_actors(actorhandler):
     color_map.AddRGBPoint(192.0, 0.0, 1.0, 0.0)
     color_map.AddRGBPoint(255.0, 1.0, 1.0, 1.0)
     mapper = vtk.vtkSmartVolumeMapper()
+    mapper.SetRequestedRenderModeToGPU()
     mapper.SetInputData(grid)
 
     volume_property = vtk.vtkVolumeProperty()
     volume_property.SetColor(color_map)
-    volume_property.SetScalarOpacityUnitDistance(0.1)
     volume_property.ShadeOff()
 
     grid_actor = vtk.vtkVolume()
@@ -66,5 +66,5 @@ def create_volume_view_actors(actorhandler):
 
     grid_actor.GetProperty().SetColor(color_map)
     grid_actor.GetProperty().SetScalarOpacity(opacityTransferFunction)
-    actorhandler.actors = {'grid': grid_actor}
+    #actorhandler.actors = {'grid': grid_actor}
     actorhandler.parent.ren.AddVolume(grid_actor)

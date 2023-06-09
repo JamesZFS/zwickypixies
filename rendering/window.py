@@ -1,5 +1,4 @@
 import re
-import os
 import vtk
 import config
 from PyQt5 import QtWidgets
@@ -86,11 +85,6 @@ class Window(QtWidgets.QMainWindow):
     def start(self):
         self.iren.Initialize()
         self.show()
-        # For fast testing
-        file = 'data/Full.cosmo.600.vtp'
-        if os.path.isfile(file):
-            self.open_file(file)
-            self.recenter()        
 
     def set_view(self, view):
         if config.CurrentView == view:
