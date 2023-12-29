@@ -57,7 +57,7 @@ class Glyph:
         self.mask_points = vtk.vtkMaskPoints()
         self.mask_points.SetInputData(polydata)
         self.mask_points.SetOnRatio(int(1 / self.ratio))
-        self.mask_points.RandomModeOn()
+        # self.mask_points.RandomModeOn()
 
         # Create a glyph filter, mapper, and actor
         self.glyph = get_glyphs(self.mask_points.GetOutputPort(), scale_factor=1.0)
@@ -92,8 +92,9 @@ class Glyph:
         self.glyph.Update()
 
     def set_scale(self, scale_factor):
-        self.glyph.SetScaleFactor(scale_factor)
-        self.glyph.Update()
+        self.set_velocity_bounds(0.5 * scale_factor, 1.5 * scale_factor)
+        # self.glyph.SetScaleFactor(scale_factor)
+        # self.glyph.Update()
 
     def set_ratio(self, ratio):
         self.ratio = max(0.001, ratio)

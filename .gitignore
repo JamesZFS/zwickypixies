@@ -1,4 +1,5 @@
-data/
+data/*
+!data/Full.cosmo.622.vtp
 random/
 __pycache__/
 *.vtp

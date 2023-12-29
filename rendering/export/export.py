@@ -43,7 +43,7 @@ class Exporter:
         timesteps = self.create_array(self.renderinterpolationsteps)
         frames = ["python3", "./rendering/export/videocreator.py"]
         frame = 0
-        for i in range(0, 623, 2):
+        for i in range(0, 623, 4):
             self.window.bottombar.updateBottomBarProgress(i)
             numbers1 = re.findall(r"\d+", filename1)
             if numbers1:
