@@ -26,7 +26,7 @@ Viewing velocity as glyphs:
 ![Velocity](assets/glyph.png)
 
 Animation of the evolution of the universe: (click to play)
-[![Animation](assets/animation.jpg)](https://youtu.be/8J6G6_Vlt_w)
+[![Animation](assets/animation.png)](https://www.youtube.com/watch?v=8J6G6_Vlt_w)
 
 ## How to Run
 
